@@ -30,8 +30,6 @@ require('lazy').setup({
 
   require 'kickstart/plugins/gitsigns',
 
-  require 'kickstart/plugins/which-key',
-
   require 'kickstart/plugins/telescope',
 
   require 'kickstart/plugins/lspconfig',
@@ -65,7 +63,7 @@ require('lazy').setup({
   --
   --  Uncomment the following line and add your plugins to `lua/custom/plugins/*.lua` to get going.
   --    For additional information, see `:help lazy.nvim-lazy.nvim-structuring-your-plugins`
-  -- { import = 'custom.plugins' },
+  { import = 'custom.plugins' },
 }, {
   ui = {
     -- If you have a Nerd Font, set icons to an empty table which will use the
