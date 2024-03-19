@@ -11,9 +11,8 @@ return {
           keymap = {
             next = '<C-l>',
             prev = '<C-h>',
-            accept = '<Tab>',
-            accept_word = '<C-)>',
-            accept_line = '<C-j>',
+            accept = '<C-j>',
+            accept_word = '<C-k>',
           },
         },
         filetypes = {
