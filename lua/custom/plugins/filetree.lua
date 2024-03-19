@@ -7,7 +7,8 @@ return {
     'MunifTanjim/nui.nvim',
   },
   config = function()
-    vim.keymap.set('n', '<leader>.', '<cmd>Neotree filesystem reveal<CR>', { desc = 'Reveal File [.]' })
+    vim.keymap.set('n', '<leader>.', '<cmd>Neotree filesystem reveal float<CR>', { desc = 'Reveal File [.]' })
+    vim.keymap.set('n', '<leader>gs', '<cmd>Neotree git_status reveal current<CR>', { desc = 'Reveal [G]it [S]tatus' })
 
     require('neo-tree').setup {
       default_component_configs = {
@@ -37,6 +38,8 @@ return {
         },
       },
       filesystem = {
+        hijack_netrw_behavior = 'open_current',
+        use_libuv_file_watcher = true,
         filtered_items = {
           visible = true,
           hide_dotfiles = false,
