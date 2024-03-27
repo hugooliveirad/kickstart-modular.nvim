@@ -7,14 +7,57 @@
 return {
   { -- Adds git related signs to the gutter, as well as utilities for managing changes
     'lewis6991/gitsigns.nvim',
-    opts = {
-      signs = {
-        add = { text = '+' },
-        change = { text = '~' },
-        delete = { text = '_' },
-        topdelete = { text = '‾' },
-        changedelete = { text = '~' },
-      },
-    },
+    config = function()
+      require('gitsigns').setup {
+        signs = {
+          add = { text = '+' },
+          change = { text = '~' },
+          delete = { text = '_' },
+          topdelete = { text = '‾' },
+          changedelete = { text = '~' },
+        },
+        on_attach = function(bufnr)
+          local gs = package.loaded.gitsigns
+
+          local function map(mode, l, r, opts)
+            opts = opts or {}
+            opts.buffer = bufnr
+            vim.keymap.set(mode, l, r, opts)
+          end
+
+          -- Navigation
+          map('n', ']g', function()
+            if vim.wo.diff then
+              return ']g'
+            end
+            vim.schedule(function()
+              gs.next_hunk()
+            end)
+            return '<Ignore>'
+          end, { expr = true, desc = '[G]it Next Hunk' })
+
+          map('n', '[g', function()
+            if vim.wo.diff then
+              return '[g'
+            end
+            vim.schedule(function()
+              gs.prev_hunk()
+            end)
+            return '<Ignore>'
+          end, { expr = true, desc = '[G]it Previous Hunk' })
+
+          map('n', '<leader>ga', gs.stage_hunk, { desc = '[G]it Stage Hunk ([A]dd)' })
+          map('n', '<leader>gf', gs.stage_buffer, { desc = '[G]it Stage [F]ile' })
+          map('n', '<leader>gb', gs.blame_line, { desc = '[G]it [B]lame Line' })
+          map('n', '<leader>gdd', gs.diffthis, { desc = '[G]it [D]iff' })
+          map('n', '<leader>gdm', function()
+            gs.diffthis 'origin/main'
+          end, { desc = '[G]it [D]iff [M]ain' })
+          map('n', '<leader>gdn', function()
+            gs.diffthis 'origin/master'
+          end, { desc = '[G]it [D]iff Master' })
+        end,
+      }
+    end,
   },
 }

@@ -7,12 +7,12 @@ return {
       require('copilot').setup {
         suggestion = {
           enabled = true,
-          auto_trigger = true,
+          auto_trigger = false,
           keymap = {
-            next = '<C-l>',
-            prev = '<C-h>',
-            accept = '<C-j>',
-            accept_word = '<C-k>',
+            next = '<C-Right>',
+            prev = '<C-Left>',
+            accept = '<C-Down>',
+            accept_word = '<C-Up>',
           },
         },
         filetypes = {

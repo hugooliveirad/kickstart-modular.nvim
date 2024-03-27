@@ -8,7 +8,7 @@ return {
   },
   config = function()
     vim.keymap.set('n', '<leader>.', '<cmd>Neotree filesystem reveal float<CR>', { desc = 'Reveal File [.]' })
-    vim.keymap.set('n', '<leader>gs', '<cmd>Neotree git_status reveal current<CR>', { desc = 'Reveal [G]it [S]tatus' })
+    vim.keymap.set('n', '<leader>gs', '<cmd>Neotree git_status reveal float<CR>', { desc = 'Reveal [G]it [S]tatus' })
 
     require('neo-tree').setup {
       default_component_configs = {
@@ -37,8 +37,32 @@ return {
           },
         },
       },
+      window = {
+        position = 'float',
+        mappings = {
+          ['a'] = {
+            'add',
+            config = {
+              show_path = 'absolute',
+            },
+          },
+
+          ['m'] = {
+            'move',
+            config = {
+              show_path = 'absolute',
+            },
+          },
+
+          ['c'] = {
+            'copy',
+            config = {
+              show_path = 'absolute',
+            },
+          },
+        },
+      },
       filesystem = {
-        hijack_netrw_behavior = 'open_current',
         use_libuv_file_watcher = true,
         filtered_items = {
           visible = true,

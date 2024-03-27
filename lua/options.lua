@@ -45,16 +45,18 @@ vim.opt.listchars = { tab = '» ', trail = '·', nbsp = '␣' }
 vim.opt.inccommand = 'split'
 
 -- Show which line your cursor is on
-vim.opt.cursorline = true
+vim.opt.cursorline = false
 
 -- Minimal number of screen lines to keep above and below the cursor.
 vim.opt.scrolloff = 10
 
 -- vim: ts=2 sts=2 sw=2 et
-
--- Folding
 vim.opt.foldlevelstart = 50
 vim.opt.foldmethod = 'indent'
+
+vim.opt.tabstop = 2
+vim.opt.shiftwidth = 2
+vim.opt.expandtab = true
 
 -- Undo saved
 local prefix = vim.env.XDG_CONFIG_HOME or vim.fn.expand '~/.config'

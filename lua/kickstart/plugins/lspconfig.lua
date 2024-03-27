@@ -93,7 +93,7 @@ return {
           --  Most Language Servers support renaming across files, etc.
           map('<leader>rn', vim.lsp.buf.rename, '[R]e[n]ame')
           map('<F2>', vim.lsp.buf.rename, 'Rename [F2]')
-          map('<F1>', vim.lsp.buf.signature_help, 'Signature Help [F1]')
+          vim.keymap.set('i', '<F1>', vim.lsp.buf.signature_help, { buffer = event.buf, desc = 'LSP: Signature Help [F1]' })
 
           -- Execute a code action, usually your cursor needs to be on top of an error
           -- or a suggestion from your LSP for this to activate.
@@ -106,6 +106,16 @@ return {
           -- WARN: This is not Goto Definition, this is Goto Declaration.
           --  For example, in C this would take you to the header
           map('gD', vim.lsp.buf.declaration, '[G]oto [D]eclaration')
+
+          map('<leader>wd', function()
+            if vim.g.conform_format_on_save_disabled then
+              vim.g.conform_format_on_save_disabled = false
+              vim.diagnostic.config { virtual_text = true }
+            else
+              vim.g.conform_format_on_save_disabled = true
+              vim.diagnostic.config { virtual_text = false }
+            end
+          end, '[W]orkspace Toggle [D]isable [D]iagnostics')
 
           -- The following two autocommands are used to highlight references of the
           -- word under your cursor when your cursor rests there for a little while.
