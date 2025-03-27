@@ -51,4 +51,34 @@ return {
       vim.cmd.hi 'Comment gui=none'
     end,
   },
+
+  {
+    'vigoux/oak',
+    priority = 1000,
+    init = function()
+      -- vim.cmd.colorscheme 'oak'
+
+      -- You can configure highlights by doing something like
+      -- vim.cmd.hi 'Comment gui=none'
+    end,
+  },
+  {
+    'savq/melange-nvim',
+    priority = 1000,
+    init = function()
+      -- vim.opt.termguicolors = true
+      -- vim.cmd.colorscheme 'melange'
+      -- vim.cmd.hi 'Comment gui=none'
+    end,
+  },
+  {
+    'ellisonleao/gruvbox.nvim',
+
+    priority = 1000,
+    init = function()
+      -- vim.opt.termguicolors = true
+      -- vim.cmd.colorscheme 'gruvbox'
+      -- vim.cmd.hi 'Comment gui=none'
+    end,
+  },
 }
