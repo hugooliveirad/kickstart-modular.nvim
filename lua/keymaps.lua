@@ -57,3 +57,7 @@ vim.keymap.set('t', '<C-h>', '<C-w>h', { noremap = true })
 vim.keymap.set('t', '<C-j>', '<C-w>j', { noremap = true })
 vim.keymap.set('t', '<C-k>', '<C-w>k', { noremap = true })
 vim.keymap.set('t', '<C-l>', '<C-w>l', { noremap = true })
+
+-- Quick session work
+vim.keymap.set('n', '<leader>Sw', '<cmd>mksession! /tmp/se1.vim<CR>')
+vim.keymap.set('n', '<leader>So', '<cmd>source /tmp/se1.vim<CR>')
