@@ -61,3 +61,39 @@ vim.keymap.set('t', '<C-l>', '<C-w>l', { noremap = true })
 -- Quick session work
 vim.keymap.set('n', '<leader>Sw', '<cmd>mksession! /tmp/se1.vim<CR>')
 vim.keymap.set('n', '<leader>So', '<cmd>source /tmp/se1.vim<CR>')
+
+-- Copy file path
+vim.keymap.set('n', '<leader>y', function()
+  local path = vim.fn.fnamemodify(vim.fn.expand('%'), ':.')
+  vim.fn.setreg('+', path)
+  vim.notify('Copied: ' .. path)
+end, { desc = 'Copy relative file path' })
+
+-- Copy file path with line numbers and selection in visual mode
+vim.keymap.set('v', '<leader>y', function()
+  -- Save the current register content and selection type
+  local old_reg = vim.fn.getreg('"')
+  local old_regtype = vim.fn.getregtype('"')
+  
+  -- Yank the selected text to the unnamed register
+  vim.cmd('normal! y')
+  
+  -- Get the selected text from the unnamed register
+  local selected_text = vim.fn.getreg('"')
+  
+  -- Get file path and line information
+  local path = vim.fn.fnamemodify(vim.fn.expand('%'), ':.')
+  local line_start = vim.fn.line("'<")
+  local line_end = vim.fn.line("'>")
+  local lines = line_start == line_end and 'L' .. line_start or 'L' .. line_start .. '-L' .. line_end
+  
+  -- Combine file path, line numbers, and selected text with markdown code block
+  local result = path .. ':' .. lines .. '\n\n```\n' .. selected_text .. '\n```'
+  
+  -- Copy the result to the clipboard
+  vim.fn.setreg('+', result)
+  vim.notify('Copied: ' .. path .. ':' .. lines)
+  
+  -- Restore the original register content and selection type
+  vim.fn.setreg('"', old_reg, old_regtype)
+end, { desc = 'Copy file path, line numbers, and selection' })
