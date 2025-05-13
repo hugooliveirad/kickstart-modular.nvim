@@ -5,3 +5,5 @@ nvim
 
 spell/
 .undo
+
+**/.claude/settings.local.json
