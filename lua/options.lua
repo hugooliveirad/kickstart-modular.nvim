@@ -31,9 +31,10 @@ vim.opt.signcolumn = 'yes'
 -- Decrease update time
 vim.opt.updatetime = 250
 
--- Decrease mapped sequence wait time
--- Displays which-key popup sooner
-vim.opt.timeoutlen = 300
+-- Set mapped sequence wait time
+-- Longer value gives more time to complete key combinations
+-- Also affects when which-key popup appears
+vim.opt.timeoutlen = 800
 
 -- Sets how neovim will display certain whitespace in the editor.
 --  See `:help 'list'`
