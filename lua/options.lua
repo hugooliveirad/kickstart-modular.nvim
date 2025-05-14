@@ -80,3 +80,20 @@ vim.opt.showmatch = true
 vim.opt.hlsearch = true
 
 -- vim.opt.laststatus = 3
+
+-- Enable autoread to detect file changes outside of Neovim
+vim.opt.autoread = true
+
+-- Create an autocommand group for file change detection
+local augroup = vim.api.nvim_create_augroup("AutoReloadFile", { clear = true })
+
+-- Add autocmd to check for file changes when cursor stops moving or buffer gains focus
+vim.api.nvim_create_autocmd({ "FocusGained", "BufEnter", "CursorHold", "CursorHoldI" }, {
+  group = augroup,
+  pattern = "*",
+  callback = function()
+    if vim.fn.getcmdwintype() == "" then
+      vim.cmd("checktime")
+    end
+  end,
+})
