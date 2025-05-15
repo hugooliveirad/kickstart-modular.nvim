@@ -59,8 +59,8 @@ vim.keymap.set('t', '<C-k>', '<C-w>k', { noremap = true })
 vim.keymap.set('t', '<C-l>', '<C-w>l', { noremap = true })
 
 -- Quick session work
-vim.keymap.set('n', '<leader>Sw', '<cmd>mksession! /tmp/se1.vim<CR>')
-vim.keymap.set('n', '<leader>So', '<cmd>source /tmp/se1.vim<CR>')
+vim.keymap.set('n', '<leader>SS', '<cmd>mksession! /tmp/se1.vim<CR><cmd>lua vim.notify("Session saved to /tmp/se1.vim")<CR>')
+vim.keymap.set('n', '<leader>SO', '<cmd>source /tmp/se1.vim<CR><cmd>lua vim.notify("Session loaded from /tmp/se1.vim")<CR>')
 
 -- Copy file path
 vim.keymap.set('n', '<leader>yy', function()
