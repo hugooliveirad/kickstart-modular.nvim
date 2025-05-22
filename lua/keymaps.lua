@@ -64,24 +64,24 @@ vim.keymap.set('n', '<leader>SO', '<cmd>source /tmp/se1.vim<CR><cmd>lua vim.noti
 
 -- Copy file path
 vim.keymap.set('n', '<leader>yy', function()
-  local path = vim.fn.fnamemodify(vim.fn.expand('%'), ':.')
+  local path = vim.fn.fnamemodify(vim.fn.expand '%', ':.')
   vim.fn.setreg('+', path)
   vim.notify('Copied: ' .. path)
 end, { desc = 'Copy relative file path' })
 
 -- Copy all diagnostics from current buffer
 vim.keymap.set('n', '<leader>yd', function()
-  local bufnr = 0  -- current buffer
+  local bufnr = 0 -- current buffer
   local diagnostics = vim.diagnostic.get(bufnr)
-  
+
   if #diagnostics == 0 then
     vim.notify('No diagnostics found', vim.log.levels.INFO)
     return
   end
-  
-  local path = vim.fn.fnamemodify(vim.fn.expand('%'), ':.')
+
+  local path = vim.fn.fnamemodify(vim.fn.expand '%', ':.')
   local result = path .. ' - Diagnostics:\n\n'
-  
+
   -- Sort diagnostics by line and column
   table.sort(diagnostics, function(a, b)
     if a.lnum == b.lnum then
@@ -89,18 +89,17 @@ vim.keymap.set('n', '<leader>yd', function()
     end
     return a.lnum < b.lnum
   end)
-  
+
   -- Format each diagnostic
   for _, diag in ipairs(diagnostics) do
-    local severity = vim.diagnostic.severity[diag.severity] or "UNKNOWN"
-    local line = diag.lnum + 1  -- Convert to 1-based line numbering
-    local col = diag.col + 1    -- Convert to 1-based column numbering
-    local message = diag.message:gsub("\n", " ")  -- Replace newlines in message
-    
-    result = result .. string.format("[%s] Line %d, Col %d: %s\n", 
-                                     severity, line, col, message)
+    local severity = vim.diagnostic.severity[diag.severity] or 'UNKNOWN'
+    local line = diag.lnum + 1 -- Convert to 1-based line numbering
+    local col = diag.col + 1 -- Convert to 1-based column numbering
+    local message = diag.message:gsub('\n', ' ') -- Replace newlines in message
+
+    result = result .. string.format('[%s] Line %d, Col %d: %s\n', severity, line, col, message)
   end
-  
+
   -- Copy to clipboard
   vim.fn.setreg('+', result)
   vim.notify('Copied ' .. #diagnostics .. ' diagnostics', vim.log.levels.INFO)
@@ -109,28 +108,28 @@ end, { desc = 'Copy all diagnostics from current buffer' })
 -- Copy file path with line numbers and selection in visual mode
 vim.keymap.set('v', '<leader>yy', function()
   -- Save the current register content and selection type
-  local old_reg = vim.fn.getreg('"')
-  local old_regtype = vim.fn.getregtype('"')
-  
+  local old_reg = vim.fn.getreg '"'
+  local old_regtype = vim.fn.getregtype '"'
+
   -- Yank the selected text to the unnamed register
-  vim.cmd('normal! y')
-  
+  vim.cmd 'normal! y'
+
   -- Get the selected text from the unnamed register
-  local selected_text = vim.fn.getreg('"')
-  
+  local selected_text = vim.fn.getreg '"'
+
   -- Get file path and line information
-  local path = vim.fn.fnamemodify(vim.fn.expand('%'), ':.')
-  local line_start = vim.fn.line("'<")
-  local line_end = vim.fn.line("'>")
+  local path = vim.fn.fnamemodify(vim.fn.expand '%', ':.')
+  local line_start = vim.fn.line "'<"
+  local line_end = vim.fn.line "'>"
   local lines = line_start == line_end and 'L' .. line_start or 'L' .. line_start .. '-L' .. line_end
-  
+
   -- Combine file path, line numbers, and selected text with markdown code block
-  local result = path .. ':' .. lines .. '\n\n```\n' .. selected_text .. '\n```'
-  
+  local result = path .. ':' .. lines .. '\n```\n' .. selected_text .. '\n```'
+
   -- Copy the result to the clipboard
   vim.fn.setreg('+', result)
   vim.notify('Copied: ' .. path .. ':' .. lines)
-  
+
   -- Restore the original register content and selection type
   vim.fn.setreg('"', old_reg, old_regtype)
 end, { desc = 'Copy file path, line numbers, and selection' })
