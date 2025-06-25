@@ -134,6 +134,15 @@ return {
       vim.keymap.set('n', '<leader>sn', function()
         builtin.find_files { cwd = vim.fn.stdpath 'config' }
       end, { desc = '[S]earch [N]eovim files' })
+
+      -- Search all files including git ignored (only ignore node_modules)
+      vim.keymap.set('n', '<leader>sF', function()
+        builtin.find_files {
+          hidden = true,
+          no_ignore = true,
+          file_ignore_patterns = { 'node_modules/.*', '.git/.*' }
+        }
+      end, { desc = '[S]earch [F]iles (all, ignore only node_modules)' })
     end,
   },
 }
