@@ -62,6 +62,9 @@ vim.keymap.set('t', '<C-l>', '<C-w>l', { noremap = true })
 vim.keymap.set('n', '<leader>SS', '<cmd>mksession! /tmp/se1.vim<CR><cmd>lua vim.notify("Session saved to /tmp/se1.vim")<CR>')
 vim.keymap.set('n', '<leader>SO', '<cmd>source /tmp/se1.vim<CR><cmd>lua vim.notify("Session loaded from /tmp/se1.vim")<CR>')
 
+-- Toggle Augment code assistance
+vim.keymap.set('n', '<leader>ag', '<cmd>AugmentToggle<CR>', { desc = '[A]ugment to[G]gle - Enable/disable code completion' })
+
 -- Copy file path
 vim.keymap.set('n', '<leader>yy', function()
   local path = vim.fn.fnamemodify(vim.fn.expand '%', ':.')

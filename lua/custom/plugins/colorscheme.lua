@@ -45,7 +45,7 @@ return {
       -- Load the colorscheme here.
       -- Like many other themes, this one has different styles, and you could load
       -- any other, such as 'tokyonight-storm', 'tokyonight-moon', or 'tokyonight-day'.
-      vim.cmd.colorscheme 'tokyonight-moon'
+      -- vim.cmd.colorscheme 'tokyonight-moon'
 
       -- You can configure highlights by doing something like
       vim.cmd.hi 'Comment gui=none'
@@ -79,6 +79,26 @@ return {
       -- vim.opt.termguicolors = true
       -- vim.cmd.colorscheme 'gruvbox'
       -- vim.cmd.hi 'Comment gui=none'
+    end,
+  },
+  -- Lazy
+  {
+    'vague2k/vague.nvim',
+    priority = 1000,
+    config = function()
+      -- NOTE: you do not need to call setup if you don't want to.
+      require('vague').setup {
+        -- optional configuration here
+      }
+    end,
+    init = function()
+      vim.cmd.colorscheme 'vague'
+      
+      -- Softer cursor hover highlights
+      vim.cmd.hi 'CursorLine guibg=#2a2a2a'
+      vim.cmd.hi 'LspReferenceRead guibg=#2a2a2a'
+      vim.cmd.hi 'LspReferenceText guibg=#2a2a2a'
+      vim.cmd.hi 'LspReferenceWrite guibg=#2a2a2a'
     end,
   },
 }
