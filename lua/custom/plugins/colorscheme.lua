@@ -93,12 +93,30 @@ return {
     end,
     init = function()
       vim.cmd.colorscheme 'vague'
-      
+
       -- Softer cursor hover highlights
       vim.cmd.hi 'CursorLine guibg=#2a2a2a'
       vim.cmd.hi 'LspReferenceRead guibg=#2a2a2a'
       vim.cmd.hi 'LspReferenceText guibg=#2a2a2a'
       vim.cmd.hi 'LspReferenceWrite guibg=#2a2a2a'
+
+      -- Quickfix list highlights (based on tokyonight style)
+      vim.cmd.hi 'QuickFixLine guibg=#333738 gui=bold' -- Using vague's visual color
+      vim.cmd.hi 'qfFileName guifg=#7e98e8' -- Using vague's hint color (blue)
+      vim.cmd.hi 'qfLineNr guifg=#606079' -- Using vague's comment color
+
+      -- Neo-tree highlights (based on tokyonight style)
+      vim.cmd.hi 'NeoTreeDimText guifg=#606079' -- Using comment color for dimmed text
+      vim.cmd.hi 'NeoTreeFileName guifg=#cdcdcd' -- Using standard fg color
+      vim.cmd.hi 'NeoTreeGitModified guifg=#f3be7c' -- Using warning/delta color (orange)
+      vim.cmd.hi 'NeoTreeGitStaged guifg=#7fa563' -- Using plus color (green)
+      vim.cmd.hi 'NeoTreeGitUntracked guifg=#bb9dbd' -- Using parameter color (dusty pink)
+      vim.cmd.hi 'NeoTreeNormal guifg=#cdcdcd guibg=#141415' -- Standard colors
+      vim.cmd.hi 'NeoTreeNormalNC guifg=#cdcdcd guibg=#141415' -- Same for non-current
+      vim.cmd.hi 'NeoTreeTabActive guifg=#7e98e8 guibg=#252530 gui=bold' -- Blue with line bg
+      vim.cmd.hi 'NeoTreeTabInactive guifg=#606079 guibg=#141415' -- Comment color with bg
+      vim.cmd.hi 'NeoTreeTabSeparatorActive guifg=#7e98e8 guibg=#252530' -- Match active tab
+      vim.cmd.hi 'NeoTreeTabSeparatorInactive guifg=#141415 guibg=#141415' -- Invisible separator
     end,
   },
 }
