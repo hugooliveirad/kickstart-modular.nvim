@@ -136,3 +136,25 @@ vim.keymap.set('v', '<leader>yy', function()
   -- Restore the original register content and selection type
   vim.fn.setreg('"', old_reg, old_regtype)
 end, { desc = 'Copy file path, line numbers, and selection' })
+
+-- Copy git diff for current file
+vim.keymap.set('n', '<leader>yg', function()
+  local path = vim.fn.expand '%:p'
+  local relative_path = vim.fn.fnamemodify(path, ':.')
+
+  -- Get git diff for the entire file
+  local diff = vim.fn.system('git diff HEAD -- ' .. vim.fn.shellescape(path))
+
+  if vim.v.shell_error ~= 0 or diff == '' then
+    -- Try git diff without HEAD (for staged changes)
+    diff = vim.fn.system('git diff -- ' .. vim.fn.shellescape(path))
+
+    if vim.v.shell_error ~= 0 or diff == '' then
+      vim.notify('No git diff found for ' .. relative_path, vim.log.levels.WARN)
+      return
+    end
+  end
+
+  vim.fn.setreg('+', diff)
+  vim.notify('Copied git diff for ' .. relative_path)
+end, { desc = 'Copy git diff for current file' })
