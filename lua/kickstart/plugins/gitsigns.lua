@@ -49,12 +49,14 @@ return {
           map('n', '<leader>ga', gs.stage_hunk, { desc = '[G]it Stage Hunk ([A]dd)' })
           map('n', '<leader>gf', gs.stage_buffer, { desc = '[G]it Stage [F]ile' })
           map('n', '<leader>gb', gs.blame_line, { desc = '[G]it [B]lame Line' })
-          map('n', '<leader>gdd', gs.diffthis, { desc = '[G]it [D]iff' })
+          map('n', '<leader>gdd', function()
+            gs.diffthis('~')
+          end, { desc = '[G]it [D]iff current changes' })
           map('n', '<leader>gdm', function()
-            gs.diffthis 'origin/main'
+            gs.diffthis('origin/main')
           end, { desc = '[G]it [D]iff [M]ain' })
           map('n', '<leader>gdn', function()
-            gs.diffthis 'origin/master'
+            gs.diffthis('origin/master')
           end, { desc = '[G]it [D]iff Master' })
         end,
       }
