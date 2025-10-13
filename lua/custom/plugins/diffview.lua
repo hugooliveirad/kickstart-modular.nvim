@@ -22,6 +22,6 @@ return {
   },
   opts = {
     enhanced_diff_hl = true,
-    use_icons = true,
+    use_icons = false,
   },
 }
