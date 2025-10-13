@@ -23,5 +23,10 @@ return {
   opts = {
     enhanced_diff_hl = true,
     use_icons = false,
+    signs = {
+      fold_closed = '+',
+      fold_open = '-',
+      done = '✓',
+    },
   },
 }
