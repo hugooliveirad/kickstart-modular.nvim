@@ -98,10 +98,10 @@ return {
       vim.keymap.set('n', '<leader>ss', builtin.builtin, { desc = '[S]earch [S]elect Telescope' })
       vim.keymap.set('n', '<leader>sw', builtin.grep_string, { desc = '[S]earch current [W]ord' })
       vim.keymap.set('v', '<leader>sw', function()
-        local old_reg = vim.fn.getreg('"')
-        local old_regtype = vim.fn.getregtype('"')
-        vim.cmd('normal! y')
-        local search_text = vim.fn.getreg('"')
+        local old_reg = vim.fn.getreg '"'
+        local old_regtype = vim.fn.getregtype '"'
+        vim.cmd 'normal! y'
+        local search_text = vim.fn.getreg '"'
         vim.fn.setreg('"', old_reg, old_regtype)
         builtin.grep_string { search = search_text }
       end, { desc = '[S]earch selected text' })
@@ -147,7 +147,7 @@ return {
         builtin.find_files {
           hidden = true,
           no_ignore = true,
-          file_ignore_patterns = { 'node_modules/.*', '.git/.*' }
+          file_ignore_patterns = { 'node_modules/.*', '.git/.*' },
         }
       end, { desc = '[S]earch [F]iles (all, ignore only node_modules)' })
     end,
