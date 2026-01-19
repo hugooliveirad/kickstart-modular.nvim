@@ -8,8 +8,8 @@ return {
   },
   config = function()
     vim.keymap.set('n', '<leader>.', '<cmd>Neotree filesystem reveal float<CR>', { desc = 'Reveal File [.]' })
-    vim.keymap.set('n', '<leader>gs', '<cmd>Neotree git_status reveal left<CR>', { desc = '[G]it [S]tatus' })
-    vim.keymap.set('n', '<leader>gS', '<cmd>Neotree git_status reveal float<CR>', { desc = '[G]it [S]tatus (float)' })
+    vim.keymap.set('n', '<leader>gs', '<cmd>Neotree git_status reveal float<CR>', { desc = '[G]it [S]tatus (float)' })
+    vim.keymap.set('n', '<leader>gS', '<cmd>Neotree git_status reveal left<CR>', { desc = '[G]it [S]tatus' })
 
     require('neo-tree').setup {
       default_component_configs = {
