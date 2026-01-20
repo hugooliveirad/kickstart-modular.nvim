@@ -14,19 +14,21 @@
 -- 10. Jump to next/prev annotation (]r/[r, configurable keymaps)
 -- 11. Import annotations from markdown file (<leader>ri)
 -- 12. Filter cycling in Trouble ('f' key: all/current_buffer/drifted)
+-- 13. Persistence to disk (config.persist.enabled, saves to .annotations.json)
+-- 14. Telescope integration (<leader>rs, with preview, delete 'd', edit 'e', filter drifted 'D')
 --
 -- NEXT TWO MOVES (PRIORITY ORDER):
 --
--- MOVE 1: Persist annotations to disk (optional, session-based by default)
+-- MOVE 1: Persist annotations to disk (optional, session-based by default) ✅ DONE
 --    Purpose: Allow saving/loading annotations across Neovim sessions
 --    Implementation:
---    - Add config option: persist = false (default)
+--    - Add config option: persist = { enabled = false, path = '.annotations.json' }
 --    - When enabled, auto-save to .annotations.json on change
 --    - Auto-load on BufEnter if file exists
 --    - Respect .gitignore (don't track by default)
 --    Test: Enable persist, add annotation, restart nvim, verify annotation restored
 --
--- MOVE 2: Telescope integration
+-- MOVE 2: Telescope integration ✅ DONE
 --    Purpose: Alternative to Trouble for annotation searching
 --    Implementation:
 --    - Add :Telescope annotate picker
@@ -62,6 +64,7 @@ local config = {
   keymaps = {
     add = '<leader>ra',
     list = '<leader>rl',
+    telescope = '<leader>rs', -- [S]earch annotations with telescope
     yank = '<leader>ry',
     delete = '<leader>rd',
     edit = '<leader>re',
@@ -90,6 +93,10 @@ local config = {
     virtual_text_drifted = 'DiagnosticWarn',
     sign = 'DiagnosticSignInfo',
     sign_drifted = 'DiagnosticSignWarn',
+  },
+  persist = {
+    enabled = false, -- Set to true to auto-save/load annotations
+    path = '.annotations.json', -- Path relative to cwd, or absolute
   },
 }
 
@@ -278,6 +285,157 @@ local function clear_annotation_rendering(annotation)
   end
 end
 
+-- ============================================================================
+-- Persistence Functions
+-- ============================================================================
+
+-- Get the persistence file path
+---@return string
+local function get_persist_path()
+  local path = config.persist.path
+  if not vim.startswith(path, '/') then
+    path = vim.fn.getcwd() .. '/' .. path
+  end
+  return path
+end
+
+-- Serialize annotations to JSON-compatible format
+---@return table
+local function serialize_annotations()
+  local data = {
+    version = 1,
+    next_id = next_id,
+    annotations = {},
+  }
+
+  for id, annotation in pairs(annotations) do
+    table.insert(data.annotations, {
+      id = annotation.id,
+      file = annotation.file,
+      start_line = annotation.start_line,
+      end_line = annotation.end_line,
+      original_content = annotation.original_content,
+      comment = annotation.comment,
+      created_at = annotation.created_at,
+      drifted = annotation.drifted,
+    })
+  end
+
+  return data
+end
+
+-- Deserialize annotations from JSON data
+---@param data table
+---@return boolean success
+local function deserialize_annotations(data)
+  if not data or data.version ~= 1 then
+    return false
+  end
+
+  -- Update next_id to avoid collisions
+  if data.next_id and data.next_id > next_id then
+    next_id = data.next_id
+  end
+
+  for _, ann_data in ipairs(data.annotations or {}) do
+    -- Skip if annotation already exists
+    if not annotations[ann_data.id] then
+      ---@type Annotation
+      local annotation = {
+        id = ann_data.id,
+        bufnr = -1, -- Will be set when buffer is opened
+        file = ann_data.file,
+        start_line = ann_data.start_line,
+        end_line = ann_data.end_line,
+        original_content = ann_data.original_content,
+        comment = ann_data.comment,
+        created_at = ann_data.created_at,
+        extmark_id = nil,
+        sign_ids = {},
+        drifted = ann_data.drifted or false,
+      }
+      annotations[ann_data.id] = annotation
+
+      -- Update next_id if needed
+      if annotation.id >= next_id then
+        next_id = annotation.id + 1
+      end
+    end
+  end
+
+  return true
+end
+
+-- Save annotations to disk
+local function save_annotations_to_disk()
+  if not config.persist.enabled then
+    return
+  end
+
+  local path = get_persist_path()
+  local data = serialize_annotations()
+
+  -- Don't save if empty
+  if #data.annotations == 0 then
+    -- Delete file if it exists and no annotations
+    if vim.fn.filereadable(path) == 1 then
+      pcall(os.remove, path)
+    end
+    return
+  end
+
+  local ok, json = pcall(vim.fn.json_encode, data)
+  if not ok then
+    vim.notify('Failed to encode annotations: ' .. tostring(json), vim.log.levels.ERROR)
+    return
+  end
+
+  local file = io.open(path, 'w')
+  if not file then
+    vim.notify('Failed to open ' .. path .. ' for writing', vim.log.levels.ERROR)
+    return
+  end
+
+  file:write(json)
+  file:close()
+end
+
+-- Load annotations from disk
+---@return boolean loaded Whether any annotations were loaded
+local function load_annotations_from_disk()
+  if not config.persist.enabled then
+    return false
+  end
+
+  local path = get_persist_path()
+  if vim.fn.filereadable(path) ~= 1 then
+    return false
+  end
+
+  local file = io.open(path, 'r')
+  if not file then
+    return false
+  end
+
+  local content = file:read '*a'
+  file:close()
+
+  if not content or content == '' then
+    return false
+  end
+
+  local ok, data = pcall(vim.fn.json_decode, content)
+  if not ok then
+    vim.notify('Failed to decode annotations file: ' .. tostring(data), vim.log.levels.WARN)
+    return false
+  end
+
+  return deserialize_annotations(data)
+end
+
+-- Track whether we've loaded from disk for current cwd
+local loaded_for_cwd = nil
+
 -- Create floating window for comment input
 ---@param callback fun(text: string|nil)
 ---@param initial_text string|nil
@@ -326,6 +484,7 @@ local function open_float_input(callback, initial_text)
   end
 
   vim.keymap.set({ 'n', 'i' }, '<C-s>', close_and_submit, { buffer = buf, desc = 'Submit annotation' })
+  vim.keymap.set('i', '<CR>', close_and_submit, { buffer = buf, desc = 'Submit annotation' })
   vim.keymap.set({ 'n', 'i' }, '<C-c>', close_and_cancel, { buffer = buf, desc = 'Cancel annotation' })
   vim.keymap.set('n', '<Esc>', close_and_cancel, { buffer = buf, desc = 'Cancel annotation' })
   vim.keymap.set('n', 'q', close_and_cancel, { buffer = buf, desc = 'Cancel annotation' })
@@ -365,6 +524,7 @@ function M.add(start_line, end_line)
     next_id = next_id + 1
 
     render_annotation(annotation)
+    save_annotations_to_disk()
   end)
 end
 
@@ -397,6 +557,7 @@ function M.delete(annotation)
 
   clear_annotation_rendering(annotation)
   annotations[annotation.id] = nil
+  save_annotations_to_disk()
 end
 
 -- Delete annotation under cursor
@@ -425,6 +586,7 @@ function M.edit_under_cursor()
 
     annotation.comment = comment
     render_annotation(annotation)
+    save_annotations_to_disk()
   end, annotation.comment)
 end
 
@@ -436,6 +598,7 @@ function M.delete_all()
         clear_annotation_rendering(annotation)
       end
       annotations = {}
+      save_annotations_to_disk()
       vim.notify('All annotations deleted', vim.log.levels.INFO)
     end
   end)
@@ -451,6 +614,7 @@ function M.undo_delete()
   local annotation = table.remove(undo_stack)
   annotations[annotation.id] = annotation
   render_annotation(annotation)
+  save_annotations_to_disk()
   vim.notify('Annotation restored', vim.log.levels.INFO)
 end
 
@@ -1140,6 +1304,238 @@ function M.open_list()
   end
 end
 
+-- ============================================================================
+-- Telescope Integration
+-- ============================================================================
+
+-- Telescope picker for annotations
+function M.telescope_picker(opts)
+  opts = opts or {}
+  local pickers = require 'telescope.pickers'
+  local finders = require 'telescope.finders'
+  local conf = require('telescope.config').values
+  local actions = require 'telescope.actions'
+  local action_state = require 'telescope.actions.state'
+  local previewers = require 'telescope.previewers'
+  local entry_display = require 'telescope.pickers.entry_display'
+
+  -- Check if we have any annotations
+  if vim.tbl_isempty(annotations) then
+    vim.notify('No annotations', vim.log.levels.INFO)
+    return
+  end
+
+  -- Collect annotations as a list
+  local annotation_list = {}
+  for _, annotation in pairs(annotations) do
+    update_position_from_extmark(annotation)
+    table.insert(annotation_list, annotation)
+  end
+
+  -- Sort by file then line
+  table.sort(annotation_list, function(a, b)
+    if a.file ~= b.file then
+      return a.file < b.file
+    end
+    return a.start_line < b.start_line
+  end)
+
+  -- Entry display setup
+  local displayer = entry_display.create {
+    separator = ' ',
+    items = {
+      { width = 4 }, -- Icon
+      { width = 30 }, -- Filename
+      { width = 10 }, -- Line range
+      { remaining = true }, -- Comment
+    },
+  }
+
+  local make_display = function(entry)
+    local ann = entry.annotation
+    local icon = ann.drifted and '⚠' or '●'
+    local icon_hl = ann.drifted and 'DiagnosticWarn' or 'DiagnosticInfo'
+    local filename = vim.fn.fnamemodify(ann.file, ':t')
+    local line_range = ann.start_line == ann.end_line and string.format('L%d', ann.start_line)
+      or string.format('L%d-%d', ann.start_line, ann.end_line)
+
+    return displayer {
+      { icon, icon_hl },
+      { filename, 'TelescopeResultsIdentifier' },
+      { line_range, 'TelescopeResultsNumber' },
+      { ann.comment, 'TelescopeResultsComment' },
+    }
+  end
+
+  -- Entry maker
+  local entry_maker = function(ann)
+    return {
+      value = ann,
+      annotation = ann,
+      display = make_display,
+      ordinal = ann.file .. ' ' .. ann.comment,
+      filename = ann.file,
+      lnum = ann.start_line,
+      col = 1,
+    }
+  end
+
+  -- Previewer that shows the annotated code
+  local previewer = previewers.new_buffer_previewer {
+    title = 'Annotation Preview',
+    define_preview = function(self, entry)
+      local ann = entry.annotation
+
+      -- Header
+      local lines = {
+        '# ' .. vim.fn.fnamemodify(ann.file, ':~:.'),
+        string.format('Lines %d-%d%s', ann.start_line, ann.end_line, ann.drifted and ' (DRIFTED)' or ''),
+        '',
+        '## Comment:',
+        ann.comment,
+        '',
+        '## Original Code:',
+      }
+
+      -- Add code content
+      for _, line in ipairs(ann.original_content) do
+        table.insert(lines, line)
+      end
+
+      vim.api.nvim_buf_set_lines(self.state.bufnr, 0, -1, false, lines)
+      vim.api.nvim_buf_set_option(self.state.bufnr, 'filetype', 'markdown')
+    end,
+  }
+
+  pickers
+    .new(opts, {
+      prompt_title = 'Annotations',
+      finder = finders.new_table {
+        results = annotation_list,
+        entry_maker = entry_maker,
+      },
+      sorter = conf.generic_sorter(opts),
+      previewer = previewer,
+      attach_mappings = function(prompt_bufnr, map)
+        -- Jump to annotation (default action)
+        actions.select_default:replace(function()
+          local selection = action_state.get_selected_entry()
+          actions.close(prompt_bufnr)
+
+          if selection and selection.annotation then
+            local ann = selection.annotation
+            -- Open file if needed
+            if ann.file ~= '' then
+              vim.cmd('edit ' .. vim.fn.fnameescape(ann.file))
+            end
+            -- Jump to line
+            vim.api.nvim_win_set_cursor(0, { ann.start_line, 0 })
+          end
+        end)
+
+        -- Delete annotation
+        map('n', 'd', function()
+          local selection = action_state.get_selected_entry()
+          if selection and selection.annotation then
+            M.delete(selection.annotation)
+            vim.notify('Annotation deleted', vim.log.levels.INFO)
+            -- Refresh picker
+            local current_picker = action_state.get_current_picker(prompt_bufnr)
+            -- Update results
+            local new_list = {}
+            for _, ann in pairs(annotations) do
+              update_position_from_extmark(ann)
+              table.insert(new_list, ann)
+            end
+            table.sort(new_list, function(a, b)
+              if a.file ~= b.file then
+                return a.file < b.file
+              end
+              return a.start_line < b.start_line
+            end)
+            current_picker:refresh(
+              finders.new_table {
+                results = new_list,
+                entry_maker = entry_maker,
+              },
+              { reset_prompt = false }
+            )
+          end
+        end)
+
+        -- Edit annotation
+        map('n', 'e', function()
+          local selection = action_state.get_selected_entry()
+          actions.close(prompt_bufnr)
+
+          if selection and selection.annotation then
+            local ann = selection.annotation
+            -- Open file and jump to line
+            if ann.file ~= '' then
+              vim.cmd('edit ' .. vim.fn.fnameescape(ann.file))
+            end
+            vim.api.nvim_win_set_cursor(0, { ann.start_line, 0 })
+            -- Open edit float
+            M.edit_by_id(ann.id)
+          end
+        end)
+
+        -- Filter drifted only
+        map('n', 'D', function()
+          local current_picker = action_state.get_current_picker(prompt_bufnr)
+          local new_list = {}
+          for _, ann in pairs(annotations) do
+            if ann.drifted then
+              update_position_from_extmark(ann)
+              table.insert(new_list, ann)
+            end
+          end
+          if #new_list == 0 then
+            vim.notify('No drifted annotations', vim.log.levels.INFO)
+            return
+          end
+          current_picker:refresh(
+            finders.new_table {
+              results = new_list,
+              entry_maker = entry_maker,
+            },
+            { reset_prompt = true }
+          )
+        end)
+
+        return true
+      end,
+    })
+    :find()
+end
+
+-- Register Telescope extension
+local function register_telescope_extension()
+  local ok, telescope = pcall(require, 'telescope')
+  if not ok then
+    return false
+  end
+
+  -- Register as an extension
+  telescope.register_extension {
+    exports = {
+      annotate = M.telescope_picker,
+    },
+  }
+  return true
+end
+
+-- Open Telescope picker (wrapper)
+function M.open_telescope()
+  local ok = pcall(require, 'telescope')
+  if not ok then
+    vim.notify('Telescope not found', vim.log.levels.ERROR)
+    return
+  end
+
+  M.telescope_picker(require('telescope.themes').get_dropdown {})
+end
+
 -- Visual mode add annotation
 function M.add_visual()
   local start_line = vim.fn.line 'v'
@@ -1169,6 +1565,10 @@ local function setup_keymaps()
 
   if km.list then
     vim.keymap.set('n', km.list, M.open_list, { desc = '[R]eview: [L]ist annotations' })
+  end
+
+  if km.telescope then
+    vim.keymap.set('n', km.telescope, M.open_telescope, { desc = '[R]eview: [S]earch annotations (telescope)' })
   end
 
   if km.yank then
@@ -1220,7 +1620,7 @@ local function setup_autocmds()
     end,
   })
 
-  -- Handle buffer enter - re-attach annotations if this file has any
+  -- Handle buffer enter - load from disk if needed, re-attach annotations if this file has any
   vim.api.nvim_create_autocmd('BufEnter', {
     group = group,
     callback = function(args)
@@ -1230,6 +1630,13 @@ local function setup_autocmds()
       -- Skip empty filepaths (scratch buffers, etc.)
       if filepath == '' then
         return
+      end
+
+      -- Load annotations from disk if we haven't for this cwd
+      local cwd = vim.fn.getcwd()
+      if config.persist.enabled and loaded_for_cwd ~= cwd then
+        loaded_for_cwd = cwd
+        load_annotations_from_disk()
       end
 
       -- Check if this file has annotations that need re-attachment

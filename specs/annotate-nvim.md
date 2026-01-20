@@ -21,6 +21,7 @@ A Neovim plugin for adding review comments to code with virtual text display and
 
 - **Virtual text:** Single line above the first line of selection, truncated with `...` if long
 - **Sign column:** Icon indicator on all lines within the commented range
+- **Line highlight:** Optional background color on all annotated lines (configurable)
 - **Drift detection:** Comments store original code snippet; if content changes, display with different (warning) highlight color
 
 ### 3. Comment List Panel
@@ -82,11 +83,16 @@ Configurable via setup(), prototype defaults:
 |-----|------|--------|
 | `<leader>ra` | v | Add comment to visual selection |
 | `<leader>rl` | n | Open Trouble list of all comments |
+| `<leader>rs` | n | Open Telescope picker for comments |
 | `<leader>ry` | n | Copy all comments to clipboard |
 | `<leader>rd` | n | Delete comment under cursor |
 | `<leader>re` | n | Edit comment under cursor |
 | `<leader>rD` | n | Delete all comments (with confirmation) |
 | `<leader>ru` | n | Undo last delete |
+| `<leader>rw` | n | Write annotations to markdown file |
+| `<leader>ri` | n | Import annotations from markdown file |
+| `]r` | n | Jump to next annotation |
+| `[r` | n | Jump to previous annotation |
 
 ## Configuration
 
@@ -96,11 +102,16 @@ require('annotate').setup({
   keymaps = {
     add = '<leader>ra',
     list = '<leader>rl',
+    telescope = '<leader>rs',
     yank = '<leader>ry',
     delete = '<leader>rd',
     edit = '<leader>re',
     delete_all = '<leader>rD',
     undo = '<leader>ru',
+    write = '<leader>rw',
+    import = '<leader>ri',
+    next_annotation = ']r',
+    prev_annotation = '[r',
   },
 
   -- Floating window
@@ -128,6 +139,14 @@ require('annotate').setup({
     virtual_text_drifted = 'DiagnosticWarn',
     sign = 'DiagnosticSignInfo',
     sign_drifted = 'DiagnosticSignWarn',
+    line = 'Visual',              -- Background highlight for annotated lines (or false to disable)
+    line_drifted = 'DiffDelete',  -- Background highlight for drifted annotated lines
+  },
+
+  -- Persistence (optional)
+  persist = {
+    enabled = false,              -- Set to true to auto-save/load annotations
+    path = '.annotations.json',   -- Path relative to cwd, or absolute
   },
 })
 ```
@@ -137,6 +156,20 @@ require('annotate').setup({
 ### Extmarks for Position Tracking
 
 Use `nvim_buf_set_extmark()` with `right_gravity = false` to track line positions as buffer changes. Extmarks automatically move with text edits.
+
+### Line Background Highlighting
+
+Use extmarks with `line_hl_group` to highlight the background of annotated lines:
+
+```lua
+-- For each line in the annotated range
+vim.api.nvim_buf_set_extmark(bufnr, namespace, line - 1, 0, {
+  line_hl_group = config.highlights.line,  -- e.g., 'Visual' or custom highlight
+  end_line = line,  -- Single line highlight
+})
+```
+
+Store extmark IDs in annotation for cleanup. Set `highlights.line = false` to disable this feature.
 
 ### Drift Detection
 
