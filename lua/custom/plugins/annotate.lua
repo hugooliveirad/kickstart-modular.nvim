@@ -1206,107 +1206,51 @@ local function get_annotation_id_from_item(item)
   return nil
 end
 
--- Open Trouble list with custom source
+-- Open Trouble list with quickfix
 function M.open_list()
-  local ok, trouble = pcall(require, 'trouble')
-  if not ok then
-    vim.notify('Trouble.nvim not found', vim.log.levels.ERROR)
-    return
-  end
-
   -- Check if we have any annotations
   if vim.tbl_isempty(annotations) then
     vim.notify('No annotations', vim.log.levels.INFO)
     return
   end
 
-  -- Try to use custom source first
-  local source_registered = register_trouble_source()
-  if source_registered then
-    -- Open with custom configuration including delete and edit keymaps
-    trouble.open {
-      mode = 'annotate',
-      keys = {
-        d = {
-          action = function(view)
-            -- Get current item from view
-            local item = view:current()
-            if not item then
-              vim.notify('No annotation selected', vim.log.levels.WARN)
-              return
-            end
+  -- Build quickfix list from annotations
+  local items = {}
+  for _, annotation in pairs(annotations) do
+    update_position_from_extmark(annotation)
+    local line_range = format_line_range(annotation.start_line, annotation.end_line)
+    local prefix = annotation.drifted and '⚠ ' or '● '
+    table.insert(items, {
+      bufnr = annotation.bufnr,
+      filename = annotation.file,
+      lnum = annotation.start_line,
+      end_lnum = annotation.end_line,
+      col = 1,
+      text = prefix .. '[' .. line_range .. '] ' .. annotation.comment,
+      type = annotation.drifted and 'W' or 'I',
+      user_data = { annotation_id = annotation.id },
+    })
+  end
 
-            local id = get_annotation_id_from_item(item)
-            if id and M.delete_by_id(id) then
-              vim.notify('Annotation deleted', vim.log.levels.INFO)
-              -- Refresh the Trouble list
-              trouble.refresh()
-              -- Close if no more annotations
-              if vim.tbl_isempty(annotations) then
-                trouble.close()
-              end
-            else
-              vim.notify('Failed to delete annotation', vim.log.levels.ERROR)
-            end
-          end,
-          desc = 'Delete annotation',
-        },
-        e = {
-          action = function(view)
-            -- Get current item from view
-            local item = view:current()
-            if not item then
-              vim.notify('No annotation selected', vim.log.levels.WARN)
-              return
-            end
-
-            local id = get_annotation_id_from_item(item)
-            if id then
-              -- Close Trouble first so the float appears in the correct window
-              trouble.close()
-              -- Small delay to let Trouble close, then edit
-              vim.schedule(function()
-                if M.edit_by_id(id) then
-                  -- After edit completes, user can reopen list with <leader>rl
-                else
-                  vim.notify('Failed to edit annotation', vim.log.levels.ERROR)
-                end
-              end)
-            else
-              vim.notify('Failed to get annotation ID', vim.log.levels.ERROR)
-            end
-          end,
-          desc = 'Edit annotation',
-        },
-        f = {
-          action = function()
-            -- Cycle to next filter
-            cycle_filter()
-            vim.notify('Filter: ' .. filter_names[current_filter], vim.log.levels.INFO)
-            -- Refresh Trouble to apply new filter
-            trouble.refresh()
-          end,
-          desc = 'Cycle filter (all/buffer/drifted)',
-        },
-      },
-    }
-  else
-    -- Fallback to quickfix if custom source registration failed
-    local items = {}
-    for _, annotation in pairs(annotations) do
-      update_position_from_extmark(annotation)
-      table.insert(items, {
-        bufnr = annotation.bufnr,
-        lnum = annotation.start_line,
-        col = 1,
-        text = annotation.comment,
-        type = annotation.drifted and 'W' or 'I',
-      })
+  -- Sort by file then line
+  table.sort(items, function(a, b)
+    if a.filename ~= b.filename then
+      return (a.filename or '') < (b.filename or '')
     end
+    return a.lnum < b.lnum
+  end)
 
-    vim.fn.setqflist(items, 'r')
-    vim.fn.setqflist({}, 'a', { title = 'Annotations' })
-    trouble.toggle 'quickfix'
+  vim.fn.setqflist({}, 'r', {
+    title = 'Annotations',
+    items = items,
+  })
+
+  -- Try Trouble first, fallback to copen
+  local ok, trouble = pcall(require, 'trouble')
+  if ok then
+    trouble.open { mode = 'quickfix' }
+  else
+    vim.cmd 'copen'
   end
 end
 
