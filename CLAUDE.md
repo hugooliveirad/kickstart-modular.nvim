@@ -1,58 +1,93 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Guidance for Claude Code when working with this Neovim configuration.
 
-## Neovim Configuration Structure
+## File Structure
 
-This repository contains a Neovim configuration based on the kickstart-modular.nvim framework, which provides a modular organization of Neovim settings.
+```
+init.lua                    # Entry point
+lua/
+├── options.lua             # Neovim settings (tabs, undo, search)
+├── keymaps.lua             # Global keymaps
+├── lazy-bootstrap.lua      # Lazy.nvim setup
+├── lazy-plugins.lua        # Plugin orchestration
+├── kickstart/
+│   ├── health.lua          # Health check module
+│   └── plugins/            # Base framework plugins
+│       ├── lspconfig.lua   # LSP configuration
+│       ├── cmp.lua         # Autocompletion
+│       ├── telescope.lua   # Fuzzy finder
+│       ├── treesitter.lua  # Syntax highlighting
+│       ├── gitsigns.lua    # Git signs + hunk ops
+│       ├── conform.lua     # Code formatting
+│       ├── mini.lua        # Statusline, surround
+│       ├── todo-comments.lua # TODO highlighting
+│       ├── debug.lua       # DAP debugging
+│       ├── indent_line.lua # Indent guides
+│       └── tokyonight.lua  # Tokyo Night theme
+└── custom/plugins/         # User additions
+    ├── colorscheme.lua     # Vague (active) + alternatives
+    ├── filetree.lua        # Neo-tree file explorer
+    ├── trouble.lua         # Diagnostics panel
+    ├── lazygit.lua         # Git UI
+    ├── diffview.lua        # Diff viewer
+    ├── typescript-tools.lua # TS-specific LSP
+    ├── vim-obsession.lua   # Session management
+    ├── autopairs.lua       # Auto bracket pairing
+    ├── nvim-tmux-navigation.lua # Tmux integration
+    ├── augmentcode.lua     # Code completion
+    ├── avante.lua          # AI assistant (disabled)
+    └── which-key.lua       # Keymap hints (disabled)
+```
 
-The main configuration files are:
-- `init.lua` - Main entry point that loads all other configuration modules
-- `lua/options.lua` - General Neovim options and settings
-- `lua/keymaps.lua` - Key mappings and shortcuts
-- `lua/lazy-bootstrap.lua` - Sets up the lazy.nvim plugin manager
-- `lua/lazy-plugins.lua` - Core plugin configuration
+## Plugin Categories
 
-## Plugin Structure
+| Category | Plugins |
+|----------|---------|
+| UI/Theme | vague (active), tokyonight, gruvbox, neo-tree |
+| LSP | lspconfig, mason, typescript-tools |
+| Completion | nvim-cmp, LuaSnip, autopairs |
+| Search | telescope, fzf-native |
+| Git | gitsigns, lazygit, diffview |
+| Editing | mini.surround, conform, Comment.nvim |
+| Navigation | vim-tmux-navigator |
+| Utilities | trouble, vim-obsession, todo-comments |
 
-Plugins are organized in two main directories:
-- `lua/kickstart/plugins/` - Core plugins from the kickstart configuration
-- `lua/custom/plugins/` - Custom user plugins
+## Key Keymaps
 
-When adding new plugins:
-1. Create a new Lua file in `lua/custom/plugins/`
-2. Return a plugin specification table compatible with lazy.nvim
-3. The plugin will be automatically loaded through the `{ import = 'custom.plugins' }` directive in `lua/lazy-plugins.lua`
+Leader: `<Space>`
 
-## Key Plugins
+| Prefix | Domain |
+|--------|--------|
+| `<leader>s*` | Search (telescope) |
+| `<leader>g*` | Git operations |
+| `<leader>d*` | Diagnostics/Diff |
+| `<leader>y*` | Copy utilities |
 
-This Neovim configuration includes several key plugins:
-- **Tokyo Night** (tokyonight.nvim) - Primary colorscheme
-- **Neo-Tree** (neo-tree.nvim) - File explorer
-- **Trouble** (trouble.nvim) - Diagnostics viewer
-- **Avante** (avante.nvim) - AI-powered coding assistant
-- **Vim-Obsession** - Session management
-- **Autopairs** - Automatic bracket/quote pairing
-- **Vim-Tmux-Navigator** - Seamless navigation between Neovim and tmux panes
+Core:
+- `<leader>.` - Neo-tree (float)
+- `<leader>gs` - Git status (float)
+- `<leader>gg` - LazyGit
+- `<leader>sf` / `<C-p>` - Find files
+- `<leader>sg` - Live grep
+- `gd` / `gr` - Go to definition/references
 
-## Keyboard Shortcuts
+## Configuration Patterns
 
-Key mappings include:
-- `<Space>` as leader key
-- `<leader>.` - Open Neo-Tree file explorer
-- `<leader>gs` - Open Neo-Tree git status view
-- `<leader>wd` - Toggle Trouble workspace diagnostics
-- `<leader>dd` - Toggle Trouble document diagnostics
-- `<leader>wq` - Toggle Trouble quickfix list
-- `<C-h/j/k/l>` - Navigate between splits (also works with tmux)
-- `<leader>Sw` - Save session to /tmp/se1.vim
-- `<leader>So` - Load session from /tmp/se1.vim
+1. **Lazy loading**: Most plugins load via events/commands
+2. **Float-first UI**: Neo-tree, LSP dialogs use floating windows
+3. **Buffer-local keymaps**: LSP keymaps attached per buffer
+4. **Custom in `custom/`**: Never modify kickstart/ files
 
-## Development Guidelines
+## Adding Plugins
 
-When modifying this Neovim configuration:
-1. Maintain the modular structure by organizing related settings in appropriate files
-2. Follow the lazy.nvim plugin specification format for adding new plugins
-3. Keep custom plugins in the `lua/custom/plugins/` directory
-4. Document new keymaps in comments or in relevant plugin configurations
-5. Never commit without asking first
+1. Create file in `lua/custom/plugins/`
+2. Return lazy.nvim spec: `return { 'author/plugin', opts = {} }`
+3. Auto-loaded via `{ import = 'custom.plugins' }`
+
+## Development Rules
+
+1. Keep custom plugins in `lua/custom/plugins/`
+2. Follow lazy.nvim plugin spec format
+3. Document keymaps in plugin config
+4. Never commit without asking first
