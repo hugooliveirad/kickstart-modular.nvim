@@ -94,6 +94,28 @@ Configurable via setup(), prototype defaults:
 | `]r` | n | Jump to next annotation |
 | `[r` | n | Jump to previous annotation |
 
+## Commands
+
+All operations available via `:Annotate` command with tab completion:
+
+| Command | Action |
+|---------|--------|
+| `:Annotate` | Open Trouble list (default) |
+| `:Annotate add` | Add annotation on current line |
+| `:Annotate list` | Open Trouble list |
+| `:Annotate telescope` | Open Telescope picker |
+| `:Annotate delete` | Delete annotation under cursor |
+| `:Annotate edit` | Edit annotation under cursor |
+| `:Annotate yank` | Copy all annotations to clipboard |
+| `:Annotate write` | Export to markdown file |
+| `:Annotate import` | Import from markdown file |
+| `:Annotate undo` | Undo last delete |
+| `:Annotate clear` | Delete all annotations |
+| `:Annotate next/prev` | Jump to next/prev annotation |
+| `:Annotate help` | Show help |
+
+Shortcuts: `:AnnotateAdd`, `:AnnotateList`, `:AnnotateTelescope`, `:AnnotateDelete`, `:AnnotateEdit`
+
 ## Configuration
 
 ```lua

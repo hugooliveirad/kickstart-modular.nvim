@@ -18,19 +18,12 @@
 -- 14. Telescope integration (<leader>rs, with preview, delete 'd', edit 'e', filter drifted 'D')
 -- 15. Virtual text at EOL (end of first line) instead of above
 -- 16. Command line input (vim.ui.input) instead of floating window
+-- 17. Line background highlighting for annotated ranges
+-- 18. :Annotate commands with completion and help
 --
 -- NEXT TWO MOVES (PRIORITY ORDER):
 --
--- MOVE 1: Line highlight for annotated range
---    Purpose: Visual indication of which lines are covered by an annotation
---    Implementation:
---    - Add config.highlights.line (default: subtle background, e.g. 'CursorLine')
---    - Use extmarks with line_hl_group for each line in annotation range
---    - Different highlight for drifted annotations (config.highlights.line_drifted)
---    - Option to disable (set to false)
---    Test: Add annotation spanning multiple lines, verify background highlight appears
---
--- MOVE 2: Annotation preview on hover
+-- MOVE 1: Annotation preview on hover
 --    Purpose: Show full annotation text when hovering over annotated line
 --    Implementation:
 --    - Add CursorHold autocmd to detect when cursor is on annotated line
@@ -38,6 +31,14 @@
 --    - Auto-close on cursor move
 --    - Configurable delay (config.hover.delay)
 --    Test: Hover cursor on annotated line, wait, verify preview appears
+--
+-- MOVE 2: Annotation gutter icons with custom highlight groups
+--    Purpose: More visible and customizable gutter indicators
+--    Implementation:
+--    - Define custom AnnotateLine/AnnotateLineDrifted highlight groups
+--    - Allow custom icon per annotation type/priority
+--    - Support for diagnostic-style underlines on annotated lines
+--    Test: Verify custom highlights appear correctly in different colorschemes
 
 ---@class Annotation
 ---@field id number Unique identifier
@@ -48,8 +49,9 @@
 ---@field original_content string[] Original lines (for drift detection)
 ---@field comment string The annotation text
 ---@field created_at number Timestamp
----@field extmark_id number|nil Extmark ID for tracking
+---@field extmark_id number|nil Extmark ID for virtual text tracking
 ---@field sign_ids number[] Sign IDs for the range
+---@field line_hl_ids number[] Extmark IDs for line background highlights
 ---@field drifted boolean Whether content has changed
 
 local M = {}
@@ -90,6 +92,8 @@ local config = {
     virtual_text_drifted = 'DiagnosticWarn',
     sign = 'DiagnosticSignInfo',
     sign_drifted = 'DiagnosticSignWarn',
+    line = 'CursorLine', -- Background highlight for annotated lines (or false to disable)
+    line_drifted = 'DiffDelete', -- Background highlight for drifted annotated lines
   },
   persist = {
     enabled = false, -- Set to true to auto-save/load annotations
@@ -104,14 +108,16 @@ local function init()
   end
   namespace = vim.api.nvim_create_namespace 'annotate'
 
-  -- Define signs
+  -- Define signs with number column highlighting
   vim.fn.sign_define('AnnotateSign', {
     text = config.sign.text,
     texthl = config.highlights.sign,
+    numhl = config.highlights.sign,
   })
   vim.fn.sign_define('AnnotateSignDrifted', {
     text = config.sign.text,
     texthl = config.highlights.sign_drifted,
+    numhl = config.highlights.sign_drifted,
   })
 end
 
@@ -218,12 +224,42 @@ local function render_signs(annotation)
   end
 end
 
+-- Render line background highlights for an annotation
+---@param annotation Annotation
+local function render_line_highlights(annotation)
+  if not vim.api.nvim_buf_is_valid(annotation.bufnr) then
+    return
+  end
+
+  -- Check if line highlighting is disabled
+  local line_hl = annotation.drifted and config.highlights.line_drifted or config.highlights.line
+  if not line_hl then
+    return
+  end
+
+  -- Remove existing line highlight extmarks
+  for _, hl_id in ipairs(annotation.line_hl_ids or {}) do
+    pcall(vim.api.nvim_buf_del_extmark, annotation.bufnr, namespace, hl_id)
+  end
+  annotation.line_hl_ids = {}
+
+  -- Add line highlight for each line in the annotation range
+  for line = annotation.start_line, annotation.end_line do
+    local hl_id = vim.api.nvim_buf_set_extmark(annotation.bufnr, namespace, line - 1, 0, {
+      line_hl_group = line_hl,
+      priority = 50, -- Lower priority than cursor line
+    })
+    table.insert(annotation.line_hl_ids, hl_id)
+  end
+end
+
 -- Render a single annotation
 ---@param annotation Annotation
 local function render_annotation(annotation)
   annotation.drifted = check_drift(annotation)
   render_virtual_text(annotation)
   render_signs(annotation)
+  render_line_highlights(annotation)
 end
 
 -- Render all annotations for a buffer
@@ -350,6 +386,7 @@ local function deserialize_annotations(data)
         created_at = ann_data.created_at,
         extmark_id = nil,
         sign_ids = {},
+        line_hl_ids = {},
         drifted = ann_data.drifted or false,
       }
       annotations[ann_data.id] = annotation
@@ -477,6 +514,7 @@ function M.add(start_line, end_line)
       created_at = os.time(),
       extmark_id = nil,
       sign_ids = {},
+      line_hl_ids = {},
       drifted = false,
     }
 
@@ -1628,12 +1666,86 @@ local function setup_autocmds()
   })
 end
 
+-- Setup user commands
+local function setup_commands()
+  -- Main command with subcommands
+  vim.api.nvim_create_user_command('Annotate', function(opts)
+    local subcmd = opts.fargs[1] or 'list'
+
+    if subcmd == 'add' then
+      -- Add annotation on current line (single line)
+      local line = vim.api.nvim_win_get_cursor(0)[1]
+      M.add(line, line)
+    elseif subcmd == 'list' or subcmd == 'trouble' then
+      M.open_list()
+    elseif subcmd == 'telescope' or subcmd == 'search' then
+      M.open_telescope()
+    elseif subcmd == 'delete' or subcmd == 'del' then
+      M.delete_under_cursor()
+    elseif subcmd == 'edit' then
+      M.edit_under_cursor()
+    elseif subcmd == 'yank' or subcmd == 'copy' then
+      M.yank_all()
+    elseif subcmd == 'write' or subcmd == 'export' then
+      M.write_to_file()
+    elseif subcmd == 'import' or subcmd == 'load' then
+      M.import_from_file()
+    elseif subcmd == 'undo' then
+      M.undo_delete()
+    elseif subcmd == 'clear' then
+      M.delete_all()
+    elseif subcmd == 'next' then
+      M.next_annotation()
+    elseif subcmd == 'prev' then
+      M.prev_annotation()
+    elseif subcmd == 'help' then
+      vim.notify([[
+Annotate commands:
+  :Annotate add       - Add annotation on current line
+  :Annotate list      - Open Trouble list (default)
+  :Annotate telescope - Open Telescope picker
+  :Annotate delete    - Delete annotation under cursor
+  :Annotate edit      - Edit annotation under cursor
+  :Annotate yank      - Copy all annotations to clipboard
+  :Annotate write     - Export to markdown file
+  :Annotate import    - Import from markdown file
+  :Annotate undo      - Undo last delete
+  :Annotate clear     - Delete all annotations
+  :Annotate next/prev - Jump to next/prev annotation
+  :Annotate help      - Show this help
+
+Visual mode: Select lines and use <leader>ra to add annotation
+]], vim.log.levels.INFO)
+    else
+      vim.notify('Unknown subcommand: ' .. subcmd .. '. Use :Annotate help', vim.log.levels.WARN)
+    end
+  end, {
+    nargs = '?',
+    complete = function()
+      return { 'add', 'list', 'telescope', 'delete', 'edit', 'yank', 'write', 'import', 'undo', 'clear', 'next', 'prev', 'help' }
+    end,
+    desc = 'Annotate commands',
+  })
+
+  -- Shortcuts for common operations
+  vim.api.nvim_create_user_command('AnnotateAdd', function()
+    local line = vim.api.nvim_win_get_cursor(0)[1]
+    M.add(line, line)
+  end, { desc = 'Add annotation on current line' })
+
+  vim.api.nvim_create_user_command('AnnotateList', M.open_list, { desc = 'List annotations in Trouble' })
+  vim.api.nvim_create_user_command('AnnotateTelescope', M.open_telescope, { desc = 'Search annotations with Telescope' })
+  vim.api.nvim_create_user_command('AnnotateDelete', M.delete_under_cursor, { desc = 'Delete annotation under cursor' })
+  vim.api.nvim_create_user_command('AnnotateEdit', M.edit_under_cursor, { desc = 'Edit annotation under cursor' })
+end
+
 -- Setup function
 ---@param opts table|nil
 function M.setup(opts)
   config = vim.tbl_deep_extend('force', config, opts or {})
   init()
   setup_keymaps()
+  setup_commands()
   setup_autocmds()
 end
 
