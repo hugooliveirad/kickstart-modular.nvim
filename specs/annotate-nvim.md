@@ -13,7 +13,7 @@ A Neovim plugin for adding review comments to code with virtual text display and
 ### 1. Adding Comments
 
 - **Trigger:** Visual select lines, press keybinding (`<leader>ra` in prototype)
-- **Input:** Small floating window (40x3) positioned near cursor
+- **Input:** Command line input at bottom of screen (vim.ui.input)
 - **Storage:** Session-only (in-memory), lost on Neovim quit
 - **Multiple comments:** Allow multiple independent comments on same/overlapping lines
 
@@ -112,13 +112,6 @@ require('annotate').setup({
     import = '<leader>ri',
     next_annotation = ']r',
     prev_annotation = '[r',
-  },
-
-  -- Floating window
-  float = {
-    width = 40,
-    height = 3,
-    border = 'rounded',
   },
 
   -- Virtual text

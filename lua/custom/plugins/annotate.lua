@@ -17,6 +17,7 @@
 -- 13. Persistence to disk (config.persist.enabled, saves to .annotations.json)
 -- 14. Telescope integration (<leader>rs, with preview, delete 'd', edit 'e', filter drifted 'D')
 -- 15. Virtual text at EOL (end of first line) instead of above
+-- 16. Command line input (vim.ui.input) instead of floating window
 --
 -- NEXT TWO MOVES (PRIORITY ORDER):
 --
@@ -75,11 +76,6 @@ local config = {
     import = '<leader>ri',
     next_annotation = ']r',
     prev_annotation = '[r',
-  },
-  float = {
-    width = 40,
-    height = 3,
-    border = 'rounded',
   },
   virtual_text = {
     prefix = ' ',
@@ -438,58 +434,20 @@ end
 -- Track whether we've loaded from disk for current cwd
 local loaded_for_cwd = nil
 
--- Create floating window for comment input
+-- Prompt for annotation input at command line
 ---@param callback fun(text: string|nil)
 ---@param initial_text string|nil
-local function open_float_input(callback, initial_text)
-  local width = config.float.width
-  local height = config.float.height
-
-  local buf = vim.api.nvim_create_buf(false, true)
-  vim.api.nvim_buf_set_option(buf, 'buftype', 'nofile')
-  vim.api.nvim_buf_set_option(buf, 'bufhidden', 'wipe')
-
-  if initial_text then
-    vim.api.nvim_buf_set_lines(buf, 0, -1, false, vim.split(initial_text, '\n'))
-  end
-
-  local win_opts = {
-    relative = 'cursor',
-    row = 1,
-    col = 0,
-    width = width,
-    height = height,
-    style = 'minimal',
-    border = config.float.border,
-    title = ' Annotation ',
-    title_pos = 'center',
-  }
-
-  local win = vim.api.nvim_open_win(buf, true, win_opts)
-  vim.api.nvim_win_set_option(win, 'wrap', true)
-
-  -- Start in insert mode
-  vim.cmd 'startinsert'
-
-  -- Keymaps for the float
-  local function close_and_submit()
-    local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
-    local text = table.concat(lines, '\n')
-    text = vim.trim(text)
-    vim.api.nvim_win_close(win, true)
-    callback(text ~= '' and text or nil)
-  end
-
-  local function close_and_cancel()
-    vim.api.nvim_win_close(win, true)
-    callback(nil)
-  end
-
-  vim.keymap.set({ 'n', 'i' }, '<C-s>', close_and_submit, { buffer = buf, desc = 'Submit annotation' })
-  vim.keymap.set('i', '<CR>', close_and_submit, { buffer = buf, desc = 'Submit annotation' })
-  vim.keymap.set({ 'n', 'i' }, '<C-c>', close_and_cancel, { buffer = buf, desc = 'Cancel annotation' })
-  vim.keymap.set('n', '<Esc>', close_and_cancel, { buffer = buf, desc = 'Cancel annotation' })
-  vim.keymap.set('n', 'q', close_and_cancel, { buffer = buf, desc = 'Cancel annotation' })
+local function prompt_annotation_input(callback, initial_text)
+  vim.ui.input({
+    prompt = 'Annotation: ',
+    default = initial_text or '',
+  }, function(input)
+    if input and vim.trim(input) ~= '' then
+      callback(vim.trim(input))
+    else
+      callback(nil)
+    end
+  end)
 end
 
 -- Add a new annotation
@@ -502,7 +460,7 @@ function M.add(start_line, end_line)
   local file = vim.api.nvim_buf_get_name(bufnr)
   local original_content = get_buffer_lines(bufnr, start_line, end_line)
 
-  open_float_input(function(comment)
+  prompt_annotation_input(function(comment)
     if not comment then
       return
     end
@@ -581,7 +539,7 @@ function M.edit_under_cursor()
     return
   end
 
-  open_float_input(function(comment)
+  prompt_annotation_input(function(comment)
     if not comment then
       return
     end
@@ -1168,7 +1126,7 @@ function M.edit_by_id(id)
   end
 
   -- Open float input with current text
-  open_float_input(function(comment)
+  prompt_annotation_input(function(comment)
     if not comment then
       return
     end
