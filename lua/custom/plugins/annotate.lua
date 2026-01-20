@@ -16,26 +16,27 @@
 -- 12. Filter cycling in Trouble ('f' key: all/current_buffer/drifted)
 -- 13. Persistence to disk (config.persist.enabled, saves to .annotations.json)
 -- 14. Telescope integration (<leader>rs, with preview, delete 'd', edit 'e', filter drifted 'D')
+-- 15. Virtual text at EOL (end of first line) instead of above
 --
 -- NEXT TWO MOVES (PRIORITY ORDER):
 --
--- MOVE 1: Persist annotations to disk (optional, session-based by default) ✅ DONE
---    Purpose: Allow saving/loading annotations across Neovim sessions
+-- MOVE 1: Line highlight for annotated range
+--    Purpose: Visual indication of which lines are covered by an annotation
 --    Implementation:
---    - Add config option: persist = { enabled = false, path = '.annotations.json' }
---    - When enabled, auto-save to .annotations.json on change
---    - Auto-load on BufEnter if file exists
---    - Respect .gitignore (don't track by default)
---    Test: Enable persist, add annotation, restart nvim, verify annotation restored
+--    - Add config.highlights.line (default: subtle background, e.g. 'CursorLine')
+--    - Use extmarks with line_hl_group for each line in annotation range
+--    - Different highlight for drifted annotations (config.highlights.line_drifted)
+--    - Option to disable (set to false)
+--    Test: Add annotation spanning multiple lines, verify background highlight appears
 --
--- MOVE 2: Telescope integration ✅ DONE
---    Purpose: Alternative to Trouble for annotation searching
+-- MOVE 2: Annotation preview on hover
+--    Purpose: Show full annotation text when hovering over annotated line
 --    Implementation:
---    - Add :Telescope annotate picker
---    - Show annotations with preview
---    - Support filtering by drifted/file
---    - Actions: jump, edit, delete
---    Test: Open telescope picker, search annotations, jump to selected
+--    - Add CursorHold autocmd to detect when cursor is on annotated line
+--    - Display floating window with full comment text + metadata
+--    - Auto-close on cursor move
+--    - Configurable delay (config.hover.delay)
+--    Test: Hover cursor on annotated line, wait, verify preview appears
 
 ---@class Annotation
 ---@field id number Unique identifier
@@ -192,9 +193,10 @@ local function render_virtual_text(annotation)
   local prefix = config.virtual_text.prefix
   local text = truncate(annotation.comment, config.virtual_text.max_length)
 
+  -- Render at end of first line of the annotated block
   annotation.extmark_id = vim.api.nvim_buf_set_extmark(annotation.bufnr, namespace, annotation.start_line - 1, 0, {
-    virt_lines = { { { prefix .. text, hl } } },
-    virt_lines_above = true,
+    virt_text = { { prefix .. text, hl } },
+    virt_text_pos = 'eol',
     right_gravity = false,
   })
 end

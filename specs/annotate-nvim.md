@@ -19,7 +19,7 @@ A Neovim plugin for adding review comments to code with virtual text display and
 
 ### 2. Display
 
-- **Virtual text:** Single line above the first line of selection, truncated with `...` if long
+- **Virtual text:** Displayed at end of the first line of selection (EOL), truncated with `...` if long
 - **Sign column:** Icon indicator on all lines within the commented range
 - **Line highlight:** Optional background color on all annotated lines (configurable)
 - **Drift detection:** Comments store original code snippet; if content changes, display with different (warning) highlight color
