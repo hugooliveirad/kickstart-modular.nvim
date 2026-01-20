@@ -92,8 +92,8 @@ local config = {
     virtual_text_drifted = 'DiagnosticWarn',
     sign = 'DiagnosticSignInfo',
     sign_drifted = 'DiagnosticSignWarn',
-    line = 'CursorLine', -- Background highlight for annotated lines (or false to disable)
-    line_drifted = 'DiffDelete', -- Background highlight for drifted annotated lines
+    line = 'AnnotateLine', -- Dim yellow background for annotated lines (or false to disable)
+    line_drifted = 'AnnotateLineDrifted', -- Dim red background for drifted annotated lines
   },
   persist = {
     enabled = false, -- Set to true to auto-save/load annotations
@@ -101,12 +101,17 @@ local config = {
   },
 }
 
--- Initialize namespace and signs
+-- Initialize namespace, signs, and custom highlights
 local function init()
   if namespace then
     return
   end
   namespace = vim.api.nvim_create_namespace 'annotate'
+
+  -- Define custom highlight groups for annotations
+  -- Dim yellow background for annotated lines
+  vim.api.nvim_set_hl(0, 'AnnotateLine', { bg = '#3d3d00' }) -- Dim yellow
+  vim.api.nvim_set_hl(0, 'AnnotateLineDrifted', { bg = '#4d2626' }) -- Dim red for drifted
 
   -- Define signs with number column highlighting
   vim.fn.sign_define('AnnotateSign', {
