@@ -303,6 +303,7 @@ local function on_buffer_delete(bufnr)
       -- Clear rendering references (buffer is gone, so they're invalid)
       annotation.extmark_id = nil
       annotation.sign_ids = {}
+      annotation.line_hl_ids = {}
     end
   end
 end
@@ -316,6 +317,13 @@ local function clear_annotation_rendering(annotation)
 
   for _, sign_id in ipairs(annotation.sign_ids or {}) do
     pcall(vim.fn.sign_unplace, 'annotate', { buffer = annotation.bufnr, id = sign_id })
+  end
+
+  -- Clear line highlight extmarks
+  for _, hl_id in ipairs(annotation.line_hl_ids or {}) do
+    if vim.api.nvim_buf_is_valid(annotation.bufnr) then
+      pcall(vim.api.nvim_buf_del_extmark, annotation.bufnr, namespace, hl_id)
+    end
   end
 end
 
