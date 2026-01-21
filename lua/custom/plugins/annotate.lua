@@ -16,23 +16,14 @@
 -- 12. Filter cycling in Trouble ('f' key: all/current_buffer/drifted)
 -- 13. Persistence to disk (config.persist.enabled, saves to .annotations.json)
 -- 14. Telescope integration (<leader>rs, with preview, delete 'd', edit 'e', filter drifted 'D')
--- 15. Virtual text at EOL (end of first line) instead of above
+-- 15. Virtual text below hunk (after end_line) with "  -> " prefix
 -- 16. Command line input (vim.ui.input) instead of floating window
 -- 17. Line background highlighting for annotated ranges
 -- 18. :Annotate commands with completion and help
 --
--- NEXT TWO MOVES (PRIORITY ORDER):
+-- NEXT MOVE:
 --
--- MOVE 1: Annotation preview on hover
---    Purpose: Show full annotation text when hovering over annotated line
---    Implementation:
---    - Add CursorHold autocmd to detect when cursor is on annotated line
---    - Display floating window with full comment text + metadata
---    - Auto-close on cursor move
---    - Configurable delay (config.hover.delay)
---    Test: Hover cursor on annotated line, wait, verify preview appears
---
--- MOVE 2: Annotation gutter icons with custom highlight groups
+-- MOVE 1: Annotation gutter icons with custom highlight groups
 --    Purpose: More visible and customizable gutter indicators
 --    Implementation:
 --    - Define custom AnnotateLine/AnnotateLineDrifted highlight groups
@@ -80,8 +71,7 @@ local config = {
     prev_annotation = '[r',
   },
   virtual_text = {
-    prefix = ' ',
-    max_length = 60,
+    max_length = 60, -- Truncate comment after this length
   },
   sign = {
     text = '',
@@ -209,13 +199,14 @@ local function render_virtual_text(annotation)
   end
 
   local hl = annotation.drifted and config.highlights.virtual_text_drifted or config.highlights.virtual_text
-  local prefix = config.virtual_text.prefix
   local text = truncate(annotation.comment, config.virtual_text.max_length)
 
-  -- Render at end of first line of the annotated block
-  annotation.extmark_id = vim.api.nvim_buf_set_extmark(annotation.bufnr, namespace, annotation.start_line - 1, 0, {
-    virt_text = { { prefix .. text, hl } },
-    virt_text_pos = 'eol',
+  -- Render as virtual line below the annotated hunk (after end_line)
+  -- Format: 2-space indent + "->" prefix + comment
+  local virtual_line = '  -> ' .. text
+  annotation.extmark_id = vim.api.nvim_buf_set_extmark(annotation.bufnr, namespace, annotation.end_line - 1, 0, {
+    virt_lines = { { { virtual_line, hl } } },
+    virt_lines_above = false, -- Place below the line
     right_gravity = false,
   })
 end
