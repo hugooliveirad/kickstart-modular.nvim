@@ -77,7 +77,7 @@ local config = {
     prev_annotation = '[r',
   },
   virtual_text = {
-    max_length = 60, -- Truncate comment after this length
+    wrap_at = 80, -- Wrap long comments at this column (0 to disable wrapping)
   },
   sign = {
     text = '',
@@ -193,6 +193,48 @@ local function update_position_from_extmark(annotation)
   end
 end
 
+-- Wrap text at specified column, preserving words when possible
+---@param text string
+---@param wrap_at number
+---@param prefix string Prefix for first line
+---@param continuation_prefix string Prefix for continuation lines
+---@return string[][] Array of virtual line chunks
+local function wrap_text(text, wrap_at, prefix, continuation_prefix, hl)
+  local lines = {}
+  local remaining = text
+  local first_line = true
+
+  while #remaining > 0 do
+    local current_prefix = first_line and prefix or continuation_prefix
+    local available_width = wrap_at - #current_prefix
+
+    if available_width <= 0 then
+      available_width = 40 -- Minimum width fallback
+    end
+
+    if #remaining <= available_width then
+      -- Fits on this line
+      table.insert(lines, { { current_prefix .. remaining, hl } })
+      break
+    end
+
+    -- Find break point (prefer word boundary)
+    local break_at = available_width
+    local space_pos = remaining:sub(1, available_width):match '.*()%s'
+    if space_pos and space_pos > available_width / 2 then
+      break_at = space_pos - 1
+    end
+
+    local line_text = remaining:sub(1, break_at)
+    remaining = remaining:sub(break_at + 1):gsub('^%s+', '') -- Trim leading whitespace
+
+    table.insert(lines, { { current_prefix .. line_text, hl } })
+    first_line = false
+  end
+
+  return lines
+end
+
 -- Render virtual text for an annotation
 ---@param annotation Annotation
 local function render_virtual_text(annotation)
@@ -206,13 +248,24 @@ local function render_virtual_text(annotation)
   end
 
   local hl = annotation.drifted and config.highlights.virtual_text_drifted or config.highlights.virtual_text
-  local text = truncate(annotation.comment, config.virtual_text.max_length)
+  local wrap_at = config.virtual_text.wrap_at or 80
 
-  -- Render as virtual line below the annotated hunk (after end_line)
-  -- Format: 2-space indent + "->" prefix + comment
-  local virtual_line = '  -> ' .. text
+  -- Build virtual lines with wrapping
+  local prefix = '  -> '
+  local continuation_prefix = '     ' -- Same width as prefix for alignment
+  local virt_lines
+
+  if wrap_at > 0 and #annotation.comment + #prefix > wrap_at then
+    -- Wrap long text into multiple lines
+    virt_lines = wrap_text(annotation.comment, wrap_at, prefix, continuation_prefix, hl)
+  else
+    -- Single line (no wrapping needed or disabled)
+    virt_lines = { { { prefix .. annotation.comment, hl } } }
+  end
+
+  -- Render as virtual lines below the annotated hunk (after end_line)
   annotation.extmark_id = vim.api.nvim_buf_set_extmark(annotation.bufnr, namespace, annotation.end_line - 1, 0, {
-    virt_lines = { { { virtual_line, hl } } },
+    virt_lines = virt_lines,
     virt_lines_above = false, -- Place below the line
     right_gravity = false,
   })

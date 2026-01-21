@@ -19,7 +19,7 @@ A Neovim plugin for adding review comments to code with virtual text display and
 
 ### 2. Display
 
-- **Virtual text:** Displayed at end of the first line of selection (EOL), truncated with `...` if long
+- **Virtual text:** Displayed below the annotated hunk, full text with word-wrap for long comments
 - **Sign column:** Icon indicator on all lines within the commented range
 - **Line highlight:** Optional background color on all annotated lines (configurable)
 - **Drift detection:** Comments store original code snippet; if content changes, display with different (warning) highlight color
@@ -141,8 +141,7 @@ require('annotate').setup({
 
   -- Virtual text
   virtual_text = {
-    prefix = ' ',  -- or custom icon
-    max_length = 60,  -- truncate after this
+    wrap_at = 80,  -- Wrap long comments at this column (0 to disable)
   },
 
   -- Sign column
