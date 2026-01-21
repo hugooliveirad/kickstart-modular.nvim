@@ -55,6 +55,10 @@ local redo_stack = {} ---@type Annotation[]
 local max_undo = 10
 local namespace = nil ---@type number|nil
 
+-- Forward declarations for functions defined later
+local refresh_trouble_if_open
+local update_quickfix_list
+
 -- Default configuration
 local config = {
   keymaps = {
@@ -542,6 +546,7 @@ function M.add(start_line, end_line)
 
     render_annotation(annotation)
     save_annotations_to_disk()
+    refresh_trouble_if_open()
   end)
 end
 
@@ -578,6 +583,7 @@ function M.delete(annotation)
   clear_annotation_rendering(annotation)
   annotations[annotation.id] = nil
   save_annotations_to_disk()
+  refresh_trouble_if_open()
 end
 
 -- Delete annotation under cursor
@@ -607,6 +613,7 @@ function M.edit_under_cursor()
     annotation.comment = comment
     render_annotation(annotation)
     save_annotations_to_disk()
+    refresh_trouble_if_open()
   end, annotation.comment)
 end
 
@@ -644,6 +651,7 @@ function M.delete_all()
 
   annotations = {}
   save_annotations_to_disk()
+  refresh_trouble_if_open()
   vim.notify(string.format('%d annotations deleted (undo to restore)', count), vim.log.levels.INFO)
 end
 
@@ -665,6 +673,7 @@ function M.undo_delete()
   annotations[annotation.id] = annotation
   render_annotation(annotation)
   save_annotations_to_disk()
+  refresh_trouble_if_open()
   vim.notify('Annotation restored (redo available)', vim.log.levels.INFO)
 end
 
@@ -686,6 +695,7 @@ function M.redo_delete()
   clear_annotation_rendering(annotation)
   annotations[annotation.id] = nil
   save_annotations_to_disk()
+  refresh_trouble_if_open()
   vim.notify('Annotation re-deleted (undo available)', vim.log.levels.INFO)
 end
 
@@ -1244,6 +1254,8 @@ function M.edit_by_id(id)
 
     annotation.comment = comment
     render_annotation(annotation)
+    save_annotations_to_disk()
+    refresh_trouble_if_open()
   end, annotation.comment)
 
   return true
@@ -1271,15 +1283,9 @@ local function get_annotation_id_from_item(item)
   return nil
 end
 
--- Open Trouble list with quickfix
-function M.open_list()
-  -- Check if we have any annotations
-  if vim.tbl_isempty(annotations) then
-    vim.notify('No annotations', vim.log.levels.INFO)
-    return
-  end
-
-  -- Build quickfix list from annotations
+-- Update quickfix list with current annotations (for Trouble refresh)
+-- Note: This is assigned to forward-declared local variable
+update_quickfix_list = function()
   local items = {}
   for _, annotation in pairs(annotations) do
     update_position_from_extmark(annotation)
@@ -1309,11 +1315,33 @@ function M.open_list()
     title = 'Annotations',
     items = items,
   })
+end
+
+-- Refresh Trouble list if it's open with qflist mode
+-- Note: This is assigned to forward-declared local variable
+refresh_trouble_if_open = function()
+  local ok, trouble = pcall(require, 'trouble')
+  if ok and trouble.is_open('qflist') then
+    update_quickfix_list()
+    trouble.refresh()
+  end
+end
+
+-- Open Trouble list with quickfix
+function M.open_list()
+  -- Check if we have any annotations
+  if vim.tbl_isempty(annotations) then
+    vim.notify('No annotations', vim.log.levels.INFO)
+    return
+  end
+
+  -- Build/update quickfix list
+  update_quickfix_list()
 
   -- Try Trouble first, fallback to copen
   local ok, trouble = pcall(require, 'trouble')
   if ok then
-    trouble.open { mode = 'quickfix' }
+    trouble.open { mode = 'qflist' }
   else
     vim.cmd 'copen'
   end
