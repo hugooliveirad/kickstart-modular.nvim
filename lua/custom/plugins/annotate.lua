@@ -1394,7 +1394,7 @@ function M.open_list()
   -- Try Trouble first, fallback to copen
   local ok, trouble = pcall(require, 'trouble')
   if ok then
-    trouble.open { mode = 'qflist' }
+    trouble.open { mode = 'qflist', focus = true }
   else
     vim.cmd 'copen'
   end
