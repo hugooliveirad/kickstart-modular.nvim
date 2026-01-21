@@ -101,6 +101,14 @@ local config = {
   },
 }
 
+-- Define custom highlight groups for annotations
+local function setup_highlights()
+  -- Dim yellow background for annotated lines
+  vim.api.nvim_set_hl(0, 'AnnotateLine', { bg = '#3d3d00', default = false })
+  -- Dim red background for drifted annotated lines
+  vim.api.nvim_set_hl(0, 'AnnotateLineDrifted', { bg = '#4d2626', default = false })
+end
+
 -- Initialize namespace, signs, and custom highlights
 local function init()
   if namespace then
@@ -108,10 +116,14 @@ local function init()
   end
   namespace = vim.api.nvim_create_namespace 'annotate'
 
-  -- Define custom highlight groups for annotations
-  -- Dim yellow background for annotated lines
-  vim.api.nvim_set_hl(0, 'AnnotateLine', { bg = '#3d3d00' }) -- Dim yellow
-  vim.api.nvim_set_hl(0, 'AnnotateLineDrifted', { bg = '#4d2626' }) -- Dim red for drifted
+  -- Set up highlights immediately
+  setup_highlights()
+
+  -- Re-apply highlights when colorscheme changes
+  vim.api.nvim_create_autocmd('ColorScheme', {
+    group = vim.api.nvim_create_augroup('AnnotateHighlights', { clear = true }),
+    callback = setup_highlights,
+  })
 
   -- Define signs with number column highlighting
   vim.fn.sign_define('AnnotateSign', {
