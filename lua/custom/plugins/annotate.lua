@@ -2,7 +2,7 @@
 -- See specs/annotate-nvim.md for full specification
 --
 -- COMPLETED:
--- 1. Core annotation functionality (add, edit, delete, undo, yank)
+-- 1. Core annotation functionality (add, edit, delete, undo, redo, yank)
 -- 2. Virtual text display + sign column indicators
 -- 3. Drift detection for changed code
 -- 4. Trouble.nvim custom source integration
@@ -51,6 +51,7 @@ local M = {}
 local annotations = {} ---@type table<number, Annotation>
 local next_id = 1
 local undo_stack = {} ---@type Annotation[]
+local redo_stack = {} ---@type Annotation[]
 local max_undo = 10
 local namespace = nil ---@type number|nil
 
@@ -65,6 +66,7 @@ local config = {
     edit = '<leader>re',
     delete_all = '<leader>rD',
     undo = '<leader>ru',
+    redo = '<leader>rU', -- Redo (shift-u)
     write = '<leader>rw',
     import = '<leader>ri',
     next_annotation = ']r',
@@ -563,6 +565,9 @@ end
 -- Delete an annotation
 ---@param annotation Annotation
 function M.delete(annotation)
+  -- Clear redo stack on new delete action
+  redo_stack = {}
+
   -- Add to undo stack
   table.insert(undo_stack, annotation)
   if #undo_stack > max_undo then
@@ -604,18 +609,41 @@ function M.edit_under_cursor()
   end, annotation.comment)
 end
 
--- Delete all annotations
+-- Delete all annotations (no confirmation - use undo to restore)
 function M.delete_all()
-  vim.ui.select({ 'Yes', 'No' }, { prompt = 'Delete all annotations?' }, function(choice)
-    if choice == 'Yes' then
-      for _, annotation in pairs(annotations) do
-        clear_annotation_rendering(annotation)
-      end
-      annotations = {}
-      save_annotations_to_disk()
-      vim.notify('All annotations deleted', vim.log.levels.INFO)
-    end
+  local count = vim.tbl_count(annotations)
+  if count == 0 then
+    vim.notify('No annotations to delete', vim.log.levels.INFO)
+    return
+  end
+
+  -- Clear redo stack on new delete action
+  redo_stack = {}
+
+  -- Push all annotations to undo stack (in reverse order so first deleted is last to undo)
+  local annotation_list = {}
+  for _, annotation in pairs(annotations) do
+    table.insert(annotation_list, annotation)
+  end
+
+  -- Sort by id descending so undo restores in original order
+  table.sort(annotation_list, function(a, b)
+    return a.id > b.id
   end)
+
+  for _, annotation in ipairs(annotation_list) do
+    table.insert(undo_stack, annotation)
+    clear_annotation_rendering(annotation)
+  end
+
+  -- Trim undo stack if needed
+  while #undo_stack > max_undo do
+    table.remove(undo_stack, 1)
+  end
+
+  annotations = {}
+  save_annotations_to_disk()
+  vim.notify(string.format('%d annotations deleted (undo to restore)', count), vim.log.levels.INFO)
 end
 
 -- Undo last delete
@@ -626,10 +654,38 @@ function M.undo_delete()
   end
 
   local annotation = table.remove(undo_stack)
+
+  -- Push to redo stack
+  table.insert(redo_stack, annotation)
+  if #redo_stack > max_undo then
+    table.remove(redo_stack, 1)
+  end
+
   annotations[annotation.id] = annotation
   render_annotation(annotation)
   save_annotations_to_disk()
-  vim.notify('Annotation restored', vim.log.levels.INFO)
+  vim.notify('Annotation restored (redo available)', vim.log.levels.INFO)
+end
+
+-- Redo last undo (re-delete the annotation)
+function M.redo_delete()
+  if #redo_stack == 0 then
+    vim.notify('Nothing to redo', vim.log.levels.WARN)
+    return
+  end
+
+  local annotation = table.remove(redo_stack)
+
+  -- Push back to undo stack
+  table.insert(undo_stack, annotation)
+  if #undo_stack > max_undo then
+    table.remove(undo_stack, 1)
+  end
+
+  clear_annotation_rendering(annotation)
+  annotations[annotation.id] = nil
+  save_annotations_to_disk()
+  vim.notify('Annotation re-deleted (undo available)', vim.log.levels.INFO)
 end
 
 -- Copy all annotations to clipboard
@@ -1549,6 +1605,10 @@ local function setup_keymaps()
     vim.keymap.set('n', km.undo, M.undo_delete, { desc = '[R]eview: [U]ndo delete' })
   end
 
+  if km.redo then
+    vim.keymap.set('n', km.redo, M.redo_delete, { desc = '[R]eview: Redo delete' })
+  end
+
   if km.write then
     vim.keymap.set('n', km.write, M.write_to_file, { desc = '[R]eview: [W]rite to file' })
   end
@@ -1652,6 +1712,8 @@ local function setup_commands()
       M.import_from_file()
     elseif subcmd == 'undo' then
       M.undo_delete()
+    elseif subcmd == 'redo' then
+      M.redo_delete()
     elseif subcmd == 'clear' then
       M.delete_all()
     elseif subcmd == 'next' then
@@ -1670,6 +1732,7 @@ Annotate commands:
   :Annotate write     - Export to markdown file
   :Annotate import    - Import from markdown file
   :Annotate undo      - Undo last delete
+  :Annotate redo      - Redo last undo
   :Annotate clear     - Delete all annotations
   :Annotate next/prev - Jump to next/prev annotation
   :Annotate help      - Show this help
@@ -1682,7 +1745,7 @@ Visual mode: Select lines and use <leader>ra to add annotation
   end, {
     nargs = '?',
     complete = function()
-      return { 'add', 'list', 'telescope', 'delete', 'edit', 'yank', 'write', 'import', 'undo', 'clear', 'next', 'prev', 'help' }
+      return { 'add', 'list', 'telescope', 'delete', 'edit', 'yank', 'write', 'import', 'undo', 'redo', 'clear', 'next', 'prev', 'help' }
     end,
     desc = 'Annotate commands',
   })

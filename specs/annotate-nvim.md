@@ -87,8 +87,9 @@ Configurable via setup(), prototype defaults:
 | `<leader>ry` | n | Copy all comments to clipboard |
 | `<leader>rd` | n | Delete comment under cursor |
 | `<leader>re` | n | Edit comment under cursor |
-| `<leader>rD` | n | Delete all comments (with confirmation) |
+| `<leader>rD` | n | Delete all comments (no confirmation, use undo to restore) |
 | `<leader>ru` | n | Undo last delete |
+| `<leader>rU` | n | Redo last undo |
 | `<leader>rw` | n | Write annotations to markdown file |
 | `<leader>ri` | n | Import annotations from markdown file |
 | `]r` | n | Jump to next annotation |
@@ -110,7 +111,8 @@ All operations available via `:Annotate` command with tab completion:
 | `:Annotate write` | Export to markdown file |
 | `:Annotate import` | Import from markdown file |
 | `:Annotate undo` | Undo last delete |
-| `:Annotate clear` | Delete all annotations |
+| `:Annotate redo` | Redo last undo |
+| `:Annotate clear` | Delete all annotations (no confirmation, use undo to restore) |
 | `:Annotate next/prev` | Jump to next/prev annotation |
 | `:Annotate help` | Show help |
 
@@ -130,6 +132,7 @@ require('annotate').setup({
     edit = '<leader>re',
     delete_all = '<leader>rD',
     undo = '<leader>ru',
+    redo = '<leader>rU',
     write = '<leader>rw',
     import = '<leader>ri',
     next_annotation = ']r',
