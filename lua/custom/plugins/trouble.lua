@@ -3,7 +3,20 @@ return {
     'folke/trouble.nvim',
     config = function()
       require('trouble').setup {
-        icons = false,
+        -- Disable icons (trouble.nvim v3 requires a table, not boolean)
+        icons = {
+          indent = {
+            top = '| ',
+            middle = '|-',
+            last = '`-',
+            fold_open = 'v ',
+            fold_closed = '> ',
+            ws = '  ',
+          },
+          folder_closed = '+ ',
+          folder_open = '- ',
+          kinds = {},
+        },
       }
 
       vim.keymap.set('n', '<leader>wd', function()
