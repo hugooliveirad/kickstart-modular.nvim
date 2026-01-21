@@ -1,35 +1,29 @@
 return {
   {
     'folke/trouble.nvim',
-    config = function()
-      require('trouble').setup {
-        -- Disable icons (trouble.nvim v3 requires a table, not boolean)
-        icons = {
-          indent = {
-            top = '| ',
-            middle = '|-',
-            last = '`-',
-            fold_open = 'v ',
-            fold_closed = '> ',
-            ws = '  ',
-          },
-          folder_closed = '+ ',
-          folder_open = '- ',
-          kinds = {},
+    cmd = 'Trouble',
+    opts = {
+      -- ASCII icons for non-nerd-font setups (trouble.nvim v3 requires a table)
+      icons = {
+        indent = {
+          top = '| ',
+          middle = '|-',
+          last = '`-',
+          fold_open = 'v ',
+          fold_closed = '> ',
+          ws = '  ',
         },
-      }
-
-      vim.keymap.set('n', '<leader>wd', function()
-        require('trouble').toggle 'workspace_diagnostics'
-      end, { silent = true, noremap = true, desc = 'Trouble [W]orkspace [D]iagnostics' })
-
-      vim.keymap.set('n', '<leader>dd', function()
-        require('trouble').toggle 'document_diagnostics'
-      end, { silent = true, noremap = true, desc = 'Trouble [D]ocument [D]iagnostics' })
-
-      vim.keymap.set('n', '<leader>wq', function()
-        require('trouble').toggle 'quickfix'
-      end, { silent = true, noremap = true, desc = 'Trouble [W]orkspace [Q]uickfix' })
-    end,
+        folder_closed = '+ ',
+        folder_open = '- ',
+        kinds = {},
+      },
+    },
+    keys = {
+      -- v3 mode names: diagnostics, qflist, loclist, symbols, lsp, etc.
+      { '<leader>xx', '<cmd>Trouble diagnostics toggle<cr>', desc = 'Trouble Diagnostics' },
+      { '<leader>xX', '<cmd>Trouble diagnostics toggle filter.buf=0<cr>', desc = 'Trouble Buffer Diagnostics' },
+      { '<leader>xq', '<cmd>Trouble qflist toggle<cr>', desc = 'Trouble Quickfix' },
+      { '<leader>xl', '<cmd>Trouble loclist toggle<cr>', desc = 'Trouble Location List' },
+    },
   },
 }
