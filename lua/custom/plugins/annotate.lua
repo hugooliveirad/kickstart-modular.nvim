@@ -173,6 +173,7 @@ local function check_drift(annotation)
 end
 
 -- Update extmark position from buffer
+-- Note: The extmark is placed at end_line (see render_virtual_text), so we track end_line position
 ---@param annotation Annotation
 local function update_position_from_extmark(annotation)
   if not annotation.extmark_id or not vim.api.nvim_buf_is_valid(annotation.bufnr) then
@@ -181,10 +182,10 @@ local function update_position_from_extmark(annotation)
 
   local mark = vim.api.nvim_buf_get_extmark_by_id(annotation.bufnr, namespace, annotation.extmark_id, {})
   if mark and #mark >= 2 then
-    local new_start = mark[1] + 1 -- Convert 0-indexed to 1-indexed
-    local line_diff = new_start - annotation.start_line
-    annotation.start_line = new_start
-    annotation.end_line = annotation.end_line + line_diff
+    local new_end = mark[1] + 1 -- Convert 0-indexed to 1-indexed (extmark tracks end_line)
+    local line_diff = new_end - annotation.end_line
+    annotation.start_line = annotation.start_line + line_diff
+    annotation.end_line = new_end
   end
 end
 
