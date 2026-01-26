@@ -26,17 +26,18 @@ lua/
 │       ├── indent_line.lua # Indent guides
 │       └── tokyonight.lua  # Tokyo Night theme
 └── custom/plugins/         # User additions
+    ├── annotate.lua        # Code review annotations
+    ├── augmentcode.lua     # Code completion
+    ├── autopairs.lua       # Auto bracket pairing
+    ├── avante.lua          # AI assistant (disabled)
     ├── colorscheme.lua     # Vague (active) + alternatives
-    ├── filetree.lua        # Neo-tree file explorer
-    ├── trouble.lua         # Diagnostics panel
-    ├── lazygit.lua         # Git UI
     ├── diffview.lua        # Diff viewer
+    ├── filetree.lua        # Neo-tree file explorer
+    ├── lazygit.lua         # Git UI
+    ├── nvim-tmux-navigation.lua # Tmux integration
+    ├── trouble.lua         # Diagnostics panel
     ├── typescript-tools.lua # TS-specific LSP
     ├── vim-obsession.lua   # Session management
-    ├── autopairs.lua       # Auto bracket pairing
-    ├── nvim-tmux-navigation.lua # Tmux integration
-    ├── augmentcode.lua     # Code completion
-    ├── avante.lua          # AI assistant (disabled)
     └── which-key.lua       # Keymap hints (disabled)
 ```
 
@@ -44,13 +45,14 @@ lua/
 
 | Category | Plugins |
 |----------|---------|
-| UI/Theme | vague (active), tokyonight, gruvbox, neo-tree |
+| UI/Theme | vague (active), tokyonight, gruvbox, oak, melange, neo-tree |
 | LSP | lspconfig, mason, typescript-tools |
-| Completion | nvim-cmp, LuaSnip, autopairs |
+| Completion | nvim-cmp, LuaSnip, autopairs, augmentcode |
 | Search | telescope, fzf-native |
 | Git | gitsigns, lazygit, diffview |
 | Editing | mini.surround, conform, Comment.nvim |
 | Navigation | vim-tmux-navigator |
+| Code Review | annotate.nvim |
 | Utilities | trouble, vim-obsession, todo-comments |
 
 ## Key Keymaps
@@ -63,6 +65,8 @@ Leader: `<Space>`
 | `<leader>g*` | Git operations |
 | `<leader>d*` | Diagnostics/Diff |
 | `<leader>y*` | Copy utilities |
+| `<leader>r*` | Review/Annotations |
+| `<leader>x*` | Trouble diagnostics |
 
 Core:
 - `<leader>.` - Neo-tree (float)
@@ -71,6 +75,9 @@ Core:
 - `<leader>sf` / `<C-p>` - Find files
 - `<leader>sg` - Live grep
 - `gd` / `gr` - Go to definition/references
+- `<C-s>` - Save, `<C-q>` - Quit
+- `<leader>-` / `<leader>\` - Horizontal/Vertical split
+- `<leader>n` - Open notepad
 
 ## Configuration Patterns
 
