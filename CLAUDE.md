@@ -65,7 +65,7 @@ Leader: `<Space>`
 | `<leader>g*` | Git operations |
 | `<leader>d*` | Diagnostics/Diff |
 | `<leader>y*` | Copy utilities |
-| `<leader>r*` | Review/Annotations |
+| `<leader>a*` | Annotations |
 | `<leader>x*` | Trouble diagnostics |
 
 Core:
