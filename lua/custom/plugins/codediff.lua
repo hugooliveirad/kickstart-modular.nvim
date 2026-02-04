@@ -6,6 +6,7 @@ return {
   cmd = 'CodeDiff',
   keys = {
     { '<leader>dd', '<cmd>CodeDiff<cr>', desc = 'Open CodeDiff (git status)' },
+    { '<leader>df', '<cmd>CodeDiff file<cr>', desc = 'Open CodeDiff (file)' },
     {
       '<leader>dm',
       function()
