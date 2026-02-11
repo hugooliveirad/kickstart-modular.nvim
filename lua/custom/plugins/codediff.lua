@@ -23,6 +23,15 @@ return {
     },
     { '<leader>dH', '<cmd>CodeDiff history<cr>', desc = 'Open CodeDiff History (all)' },
   },
+  opts = {
+    explorer = {
+      view_mode = 'tree',
+      icons = {
+        folder_closed = '+',
+        folder_open = '-',
+      },
+    },
+  },
   keymaps = {
     view = {
       next_hunk = ']g',
