@@ -11,6 +11,25 @@ return {
     vim.keymap.set('n', '<leader>gs', '<cmd>Neotree git_status reveal float<CR>', { desc = '[G]it [S]tatus (float)' })
     vim.keymap.set('n', '<leader>gS', '<cmd>Neotree git_status reveal left<CR>', { desc = '[G]it [S]tatus' })
 
+    -- Speed up git_status by removing --ignored=traditional flag
+    -- which causes git to list every ignored file (e.g. node_modules contents)
+    local events = require 'neo-tree.events'
+    events.subscribe {
+      event = events.BEFORE_GIT_STATUS,
+      handler = function(args)
+        local status_args = args and args.status_args
+        if not status_args then
+          return
+        end
+        for i, arg in ipairs(status_args) do
+          if arg:match '^--ignored=' then
+            status_args[i] = '--ignored=no'
+            break
+          end
+        end
+      end,
+    }
+
     require('neo-tree').setup {
       default_component_configs = {
         icon = {
