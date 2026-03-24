@@ -31,11 +31,11 @@ return {
         folder_open = '-',
       },
     },
-  },
-  keymaps = {
-    view = {
-      next_hunk = ']g',
-      prev_hunk = '[g',
+    keymaps = {
+      view = {
+        next_hunk = ']g',
+        prev_hunk = '[g',
+      },
     },
   },
 }
