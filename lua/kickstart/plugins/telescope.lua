@@ -89,10 +89,23 @@ return {
       local builtin = require 'telescope.builtin'
       vim.keymap.set('n', '<leader>sh', builtin.help_tags, { desc = '[S]earch [H]elp' })
       vim.keymap.set('n', '<leader>sk', builtin.keymaps, { desc = '[S]earch [K]eymaps' })
-      -- <leader>sf, <C-p> and <leader>sn moved to fff.nvim (lua/custom/plugins/fff.lua)
+      vim.keymap.set('n', '<leader>sf', function()
+        builtin.find_files { hidden = true }
+      end, { desc = '[S]earch [F]iles' })
+      vim.keymap.set('n', '<C-p>', function()
+        builtin.find_files { hidden = true }
+      end, { desc = '[S]earch [F]iles' })
       vim.keymap.set('n', '<leader>ss', builtin.builtin, { desc = '[S]earch [S]elect Telescope' })
-      -- <leader>sw moved to fff.nvim (lua/custom/plugins/fff.lua)
-      -- <leader>sg moved to fff.nvim (lua/custom/plugins/fff.lua)
+      vim.keymap.set('n', '<leader>sw', builtin.grep_string, { desc = '[S]earch current [W]ord' })
+      vim.keymap.set('v', '<leader>sw', function()
+        local old_reg = vim.fn.getreg '"'
+        local old_regtype = vim.fn.getregtype '"'
+        vim.cmd 'normal! y'
+        local search_text = vim.fn.getreg '"'
+        vim.fn.setreg('"', old_reg, old_regtype)
+        builtin.grep_string { search = search_text }
+      end, { desc = '[S]earch selected text' })
+      vim.keymap.set('n', '<leader>sg', builtin.live_grep, { desc = '[S]earch by [G]rep' })
       vim.keymap.set('n', '<leader>sd', builtin.diagnostics, { desc = '[S]earch [D]iagnostics' })
       vim.keymap.set('n', '<leader>sr', builtin.resume, { desc = '[S]earch [R]esume' })
       vim.keymap.set('n', '<leader>s.', builtin.oldfiles, { desc = '[S]earch Recent Files ("." for repeat)' })
@@ -124,7 +137,10 @@ return {
         }
       end, { desc = '[S]earch [/] in Open Files' })
 
-      -- <leader>sn moved to fff.nvim (lua/custom/plugins/fff.lua)
+      -- Shortcut for searching your neovim configuration files
+      vim.keymap.set('n', '<leader>sn', function()
+        builtin.find_files { cwd = vim.fn.stdpath 'config' }
+      end, { desc = '[S]earch [N]eovim files' })
 
       -- Search all files including git ignored (only ignore node_modules)
       vim.keymap.set('n', '<leader>sF', function()
