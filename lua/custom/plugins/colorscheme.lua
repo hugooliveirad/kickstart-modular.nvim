@@ -81,6 +81,25 @@ return {
       -- vim.cmd.hi 'Comment gui=none'
     end,
   },
+  {
+    'ntk148v/komau.vim',
+    priority = 1000,
+    init = function()
+      -- vim.cmd.colorscheme 'komau'
+      -- vim.cmd.hi 'Comment guibg=#1a1a1a gui=none'
+    end,
+  },
+  {
+    'kungfusheep/mfd.nvim',
+    lazy = false,
+    priority = 1000,
+    init = function()
+      -- Variants: mfd, mfd-dark, mfd-stealth, mfd-amber, mfd-mono, mfd-scarlet,
+      -- mfd-paper, mfd-hud, mfd-nvg, mfd-blackout, mfd-flir, mfd-flir-bh,
+      -- mfd-flir-rh, mfd-flir-fusion, mfd-gbl-light, mfd-gbl-dark, mfd-lumon, mfd-nerv
+      -- vim.cmd.colorscheme 'mfd-amber'
+    end,
+  },
   -- Lazy
   {
     'vague2k/vague.nvim',
