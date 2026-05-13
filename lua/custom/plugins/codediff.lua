@@ -10,9 +10,9 @@ return {
     {
       '<leader>dm',
       function()
-        vim.cmd('CodeDiff ' .. utils.get_parent_branch() .. '...')
+        vim.cmd('CodeDiff ' .. utils.get_parent_branch() .. '...HEAD')
       end,
-      desc = 'Open CodeDiff (merge-base vs working tree)',
+      desc = 'Open CodeDiff (merge-base vs HEAD)',
     },
     {
       '<leader>dh',
